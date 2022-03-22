@@ -10,9 +10,10 @@ from server import app
 from utils import callback_triggered_by
 
 
-def heatmap_data():
+def heatmap_data(head):
     import random
     data = [[random.random() for i in range(8)] for j in range(8)]  #
+    data = global_data.get_head_data(head)
     return data
 
 
@@ -119,7 +120,8 @@ def add_layout(fig):
 
 
 def add_heatmap_trace(fig, row, col):
-    data = heatmap_data()
+    head = (row - 1) * global_data.subplot_cols + (col-1)
+    data = heatmap_data(head)
     trace = go.Heatmap(
         z=data,
         colorscale='Viridis',

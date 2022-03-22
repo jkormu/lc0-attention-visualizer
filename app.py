@@ -4,7 +4,7 @@ from dash import dcc, html
 from activation_heatmap import heatmap
 from fen_input import fen_component
 
-DEBUG = True
+DEBUG = False
 
 if DEBUG:
     APP_CONTAINER_BG = 'rgba(116, 153, 46, 0.2)'  # ugly green

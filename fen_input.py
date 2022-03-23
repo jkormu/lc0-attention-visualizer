@@ -5,35 +5,34 @@ from server import app
 
 
 def fen_component():
-    fen_pgn_container = html.Div(style={
-        # 'position': 'relative',
-        # 'width': '100%',
-        # 'paddingBottom': FEN_PGN_COMPONENT_RELATIVE_HEIGHT,
-        # 'float': 'left',
-        # 'height': 0,
-    })
     fen_component = html.Div(id='fen-component',
+                             style={'display': 'flex', 'flexDirection': 'column'},
                              # style=FEN_COMPONENT_STYLE,
                              )
     add_button = html.Button(id='add-fen',
-                             children=['Set fen'],
+                             children=['Set'],
                              style={'marginRight': '5px', 'marginBottom': '3px'})
     fen_input = dcc.Input(id='fen-input',
                           type='text',
                           size="70",
                           autoComplete="off",
-                          style={'fontSize': '12px', 'width': '100%'}
+                          style={'fontSize': '12px',
+                                 #'width': '100%',
+                                 }
                           # style={'flex': 1},
                           )
 
     add_startpos = html.Button(id='add-startpos',
                                children=['Start position'],
-                               style={'marginRight': '5px', 'marginBottom': '3px'})  # , 'marginTop': '5px'
+                               style={'marginRight': '5px', 'marginBottom': '3px'},
+                               hidden=True)  # , 'marginTop': '5px'
 
     add_buttons = html.Div(children=[add_button,
+                                     fen_input,
                                      add_startpos
                                      ],
-                           style={'display': 'flex'})
+                           #style={'display': 'flex'},
+                           )
 
     fen_text = html.Div(id='fen-text',
                         hidden=True,
@@ -41,8 +40,11 @@ def fen_component():
                                'fontSize': '15px',
                                'textAlign': 'center'},
                         children=global_data.fen)
-
-    fen_component.children = [add_buttons, fen_input, fen_text
+    label = html.Label(html.B('Fen'), className='header-label')
+    fen_component.children = [label,
+                              #fen_input,
+                              add_buttons,
+                              fen_text
                               ]
     # fen_pgn_container.children = [fen_component]
     return fen_component  # fen_pgn_container

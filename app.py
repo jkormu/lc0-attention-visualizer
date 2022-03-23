@@ -3,8 +3,9 @@ from server import app
 from dash import dcc, html
 from activation_heatmap import heatmap
 from fen_input import fen_component
+from controls import mode_selector
 
-DEBUG = False
+DEBUG = True
 
 if DEBUG:
     APP_CONTAINER_BG = 'rgba(116, 153, 46, 0.2)'  # ugly green
@@ -33,7 +34,8 @@ left_container = html.Div(
 
 graph_container = html.Div(
     style={'height': f'{GRAPH_PANE_HEIGHT}%', 'width': '100%', 'backgroundColor': GRAPH_CONTAINER_BG,
-           'position': 'relative'}
+           #'position': 'relative',
+           }
 )
 # html.Div(children=['GRAPH'])
 # position_component = html.Div(children=['BOARD'])
@@ -51,27 +53,28 @@ right_container = html.Div(
 right_container.children = []
 
 header_container = html.Div(children=[
-    fen_component()
+    fen_component(),
+    mode_selector()
 ],
     style={'height': '10%', 'width': '100%', 'backgroundColor': APP_CONTAINER_BG,
            'display': 'flex', 'flexDirection': 'row', 'alignItems:': 'flex-end', 'overflow': 'auto'})
 
 top_container = html.Div(children=[
     left_container,
-    right_container,
+    #right_container,
     # left_container,
 ],
-    style={'height': '70%', 'width': '100%', 'backgroundColor': APP_CONTAINER_BG,
+    style={'height': '90%', 'width': '100%', 'backgroundColor': APP_CONTAINER_BG,
            'display': 'flex', 'flexDirection': 'row', 'alignItems:': 'flex-end', 'overflow': 'auto'})
 
-bottom_container = html.Div(children=[
-],
-    style={'height': '40%', 'width': '100%', 'backgroundColor': APP_CONTAINER_BG,
-           'display': 'flex', 'flexDirection': 'row', 'alignItems:': 'flex-end', 'overflow': 'auto'})
+#bottom_container = html.Div(children=[
+#],
+#    style={'height': '40%', 'width': '100%', 'backgroundColor': APP_CONTAINER_BG,
+#           'display': 'flex', 'flexDirection': 'row', 'alignItems:': 'flex-end', 'overflow': 'auto'})
 
 layout = html.Div(children=[header_container,
                             top_container,
-                            bottom_container,
+                            #bottom_container,
                             # left_container,
                             ],
                   style={'height': '100vh', 'width': '100vw', 'backgroundColor': APP_CONTAINER_BG,

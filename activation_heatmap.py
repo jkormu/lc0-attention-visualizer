@@ -120,7 +120,7 @@ def add_layout(fig):
 
 
 def add_heatmap_trace(fig, row, col):
-    head = (row - 1) * global_data.subplot_cols + (col-1)
+    head = (row - 1) * global_data.subplot_cols + (col - 1)
     data = heatmap_data(head)
     trace = go.Heatmap(
         z=data,
@@ -164,11 +164,14 @@ def add_pieces(fig):
 
 @app.callback(Output('graph', 'figure'),
               [Input('graph', 'clickData'),
-               Input('fen-text', 'children'),
+               Input('mode-selector', 'value'),
+               Input('fen-text', 'children')
                ])
-def update_heatmaps(click_data, *args):
+def update_heatmaps(click_data, mode, *args):
     fig = dash.no_update
     trigger = callback_triggered_by()
+    global_data.visualization_mode = mode
+    print('MODE', mode)
     if trigger == 'graph.clickData' and not click_data:
         return dash.no_update
 
@@ -182,6 +185,9 @@ def update_heatmaps(click_data, *args):
             fig = heatmap_figure()
 
     if trigger == 'fen-text.children':
+        fig = heatmap_figure()
+
+    if trigger == 'mode-selector.value':
         fig = heatmap_figure()
 
     return fig

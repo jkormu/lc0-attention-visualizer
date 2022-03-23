@@ -9,7 +9,7 @@ class GlobalData:
         self.number_of_heads = 8
 
         self.activations = activations_array
-        self.mode = 'row'
+        self.visualization_mode = 'ROW'
 
         if self.number_of_heads <= 8:
             if self.number_of_heads > 4 and self.number_of_heads in (4, 8):
@@ -23,7 +23,12 @@ class GlobalData:
         self.subplot_rows = self.number_of_heads // self.subplot_cols #+ (self.number_of_heads % self.subplot_cols != 0)
 
     def get_head_data(self, head):
-        data = self.activations[head, self.focused_square_ind, :].reshape((8, 8))
+        if self.visualization_mode == 'ROW':
+            print('ROW selection')
+            data = self.activations[head, self.focused_square_ind, :].reshape((8, 8))
+        else:
+            print('COL selection')
+            data = self.activations[head, :, self.focused_square_ind].reshape((8, 8))
         return data
 
     def set_fen(self, fen):

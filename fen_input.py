@@ -7,6 +7,7 @@ from server import app
 def fen_component():
     fen_component = html.Div(id='fen-component',
                              style={'display': 'flex', 'flexDirection': 'column'},
+                             className='header-control-container',
                              # style=FEN_COMPONENT_STYLE,
                              )
     add_button = html.Button(id='add-fen',

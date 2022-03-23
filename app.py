@@ -3,7 +3,7 @@ from server import app
 from dash import dcc, html
 from activation_heatmap import heatmap
 from fen_input import fen_component
-from controls import mode_selector
+from controls import mode_selector, layer_selector
 
 DEBUG = True
 
@@ -54,7 +54,8 @@ right_container.children = []
 
 header_container = html.Div(children=[
     fen_component(),
-    mode_selector()
+    mode_selector(),
+    layer_selector(),
 ],
     style={'height': '10%', 'width': '100%', 'backgroundColor': APP_CONTAINER_BG,
            'display': 'flex', 'flexDirection': 'row', 'alignItems:': 'flex-end', 'overflow': 'auto'})

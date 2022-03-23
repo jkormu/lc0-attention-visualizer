@@ -191,3 +191,5 @@ def update_heatmaps(click_data, mode, *args):
         fig = heatmap_figure()
 
     return fig
+
+

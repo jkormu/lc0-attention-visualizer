@@ -23,21 +23,6 @@ def get_pieces():
     return board
 
 
-# def add_focused_square_highlight(fig):
-#    ind = global_data.focused_square_ind
-#    row = ind // 8
-#    col = ind % 8
-#    fig.add_shape(type="rect",
-#                  x0=-0.5 + col, y0=-0.5 + row, x1=0.5 + col, y1=0.5 + row,
-#                  line=dict(
-#                      color="Red",
-#                      width=3,
-#                  ),
-#                  row='all',
-#                  col='all',
-#                  )
-#    return fig
-
 def heatmap_figure():
     import time
     start = time.time()
@@ -53,8 +38,9 @@ def heatmap_figure():
     print('add layout:', time.time() - start)
 
     start = time.time()
-    fig = add_pieces(fig)
-    print('add pieces:', time.time() - start)
+    if not global_data.visualization_mode_is_64x64:
+        fig = add_pieces(fig)
+        print('add pieces:', time.time() - start)
     return fig
 
 
@@ -99,36 +85,62 @@ def add_layout(fig):
 
     fig['layout'].update(layout)
 
-    fig.update_xaxes(title=None, range=[-0.5, 7.5],
+    if global_data.visualization_mode_is_64x64:
+        tickvals = list(range(64))
+        ticktext_x = None
+        ticktext_y = None
+        showticklabels = False
+        val_range = [-0.5, 63.5]
+    else:
+        tickvals = list(range(8))#[0, 1, 2, 3, 4, 5, 6, 7]
+        ticktext_x = [letter for letter in 'abcdefgh']
+        ticktext_y = [letter for letter in '12345678']
+        showticklabels = True
+        val_range = [-0.5, 7.5]
+
+    fig.update_xaxes(title=None,
+                     range=val_range,
                      zeroline=False,
                      showgrid=False,
                      scaleanchor='y',
                      constrain='domain',
                      # constraintoward='right',
-                     ticktext=[letter for letter in 'abcdefgh'],
-                     tickvals=[0, 1, 2, 3, 4, 5, 6, 7])
+                     ticktext=ticktext_x,
+                     tickvals=tickvals,
+                     showticklabels=showticklabels
+                     )
     fig.update_yaxes(title=None,
-                     range=[-0.5, 7.5],
+                     range=val_range,
                      zeroline=False,
                      showgrid=False,
                      scaleanchor='x',
                      constrain='domain',
                      constraintoward='top',
-                     ticktext=[letter for letter in '12345678'],
-                     tickvals=[0, 1, 2, 3, 4, 5, 6, 7])
+                     ticktext=ticktext_y,
+                     tickvals=tickvals,
+                     showticklabels=showticklabels
+                     )
     return fig
 
 
 def add_heatmap_trace(fig, row, col):
     head = (row - 1) * global_data.subplot_cols + (col - 1)
     data = heatmap_data(head)
+
+    if global_data.visualization_mode_is_64x64:
+        xgap, ygap = 0, 0
+        hovertemplate = '<b>%{z}</b><extra></extra>'
+    else:
+        xgap, ygap = 2, 2
+        hovertemplate = '<b>%{x}%{y}</b>: <b>%{z}</b><extra></extra>'
+
     trace = go.Heatmap(
         z=data,
         colorscale='Viridis',
         showscale=False,
-        xgap=2,
-        ygap=2,
-        hovertemplate='<b>%{x}%{y}</b>: <b>%{z}</b><extra></extra>'
+        xgap=xgap,
+        ygap=ygap,
+        hovertemplate=hovertemplate
     )
     fig.add_trace(trace, row=row, col=col)
     return fig
@@ -170,12 +182,12 @@ def add_pieces(fig):
 def update_heatmaps(click_data, mode, *args):
     fig = dash.no_update
     trigger = callback_triggered_by()
-    global_data.visualization_mode = mode
+    global_data.set_visualization_mode(mode)
     print('MODE', mode)
     if trigger == 'graph.clickData' and not click_data:
         return dash.no_update
 
-    if trigger == 'graph.clickData':
+    if trigger == 'graph.clickData' and not global_data.visualization_mode_is_64x64:
         point = click_data['points'][0]
         x = point['x']
         y = point['y']

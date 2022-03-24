@@ -7,8 +7,9 @@ def mode_selector():
     label = html.Label(html.B('Mode'), className='header-label')
     selector = dcc.RadioItems(
         options=[
-            {'label': 'Row', 'value': 'ROW'},
-            {'label': 'Column', 'value': 'COL'},
+            {'label': '8x8 Row', 'value': 'ROW'},
+            {'label': '8x8 Column', 'value': 'COL'},
+            {'label': '64x64', 'value': '64x64'}
         ],
         value='ROW',
         style={'display': 'flex', 'flexDirection': 'column'},#, 'alignItems:': 'flex-end'}

@@ -5,7 +5,7 @@ from activation_heatmap import heatmap
 from fen_input import fen_component
 from controls import mode_selector, layer_selector
 
-DEBUG = True
+DEBUG = False
 
 if DEBUG:
     APP_CONTAINER_BG = 'rgba(116, 153, 46, 0.2)'  # ugly green
@@ -57,8 +57,10 @@ header_container = html.Div(children=[
     mode_selector(),
     layer_selector(),
 ],
+    className='header-container',
     style={'height': '10%', 'width': '100%', 'backgroundColor': APP_CONTAINER_BG,
-           'display': 'flex', 'flexDirection': 'row', 'alignItems:': 'flex-end', 'overflow': 'auto'})
+           'display': 'flex', 'flexDirection': 'row', 'alignItems:': 'flex-end',
+})
 
 top_container = html.Div(children=[
     left_container,

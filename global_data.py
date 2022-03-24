@@ -10,6 +10,7 @@ class GlobalData:
 
         self.activations = activations_array
         self.visualization_mode = 'ROW'
+        self.visualization_mode_is_64x64 = False
 
         if self.number_of_heads <= 8:
             if self.number_of_heads > 4 and self.number_of_heads in (4, 8):
@@ -22,13 +23,25 @@ class GlobalData:
 
         self.subplot_rows = self.number_of_heads // self.subplot_cols #+ (self.number_of_heads % self.subplot_cols != 0)
 
+    def set_visualization_mode(self, mode):
+        self.visualization_mode = mode
+        self.visualization_mode_is_64x64 = mode == '64x64'
+
+
     def get_head_data(self, head):
-        if self.visualization_mode == 'ROW':
-            print('ROW selection')
+
+        if self.visualization_mode == '64x64':
+            #print('64x64 selection')
+            data = self.activations[head, :, :]
+
+        elif self.visualization_mode == 'ROW':
+            #print('ROW selection')
             data = self.activations[head, self.focused_square_ind, :].reshape((8, 8))
         else:
-            print('COL selection')
+            #print('COL selection')
             data = self.activations[head, :, self.focused_square_ind].reshape((8, 8))
+
+        #print('SHAPE', data.shape)
         return data
 
     def set_fen(self, fen):

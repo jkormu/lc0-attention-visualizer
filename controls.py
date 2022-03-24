@@ -23,12 +23,13 @@ def layer_selector():
     label = html.Label(html.B('Layer'), className='header-label')
     selector = dcc.Dropdown(
         options=[
-            {'label': 'Dummy head1', 'value': 1},
-            {'label': 'Dummy head2', 'value': -1},
+            {'label': 'Dummy layer 1', 'value': 1},
+            {'label': 'Dummy layer 2', 'value': -1},
         ],
-        value=-1,
+        value=1,
         clearable=False,
-        style={'width': '200px'}
+        style={'width': '200px'},
+        id='layer-selector'
     )
     layer_selector_container.children = [label, selector]
     return layer_selector_container

@@ -107,7 +107,8 @@ def add_layout(fig):
                      # constraintoward='right',
                      ticktext=ticktext_x,
                      tickvals=tickvals,
-                     showticklabels=showticklabels
+                     showticklabels=showticklabels,
+                     fixedrange=True
                      )
     fig.update_yaxes(title=None,
                      range=val_range,
@@ -118,7 +119,8 @@ def add_layout(fig):
                      constraintoward='top',
                      ticktext=ticktext_y,
                      tickvals=tickvals,
-                     showticklabels=showticklabels
+                     showticklabels=showticklabels,
+                     fixedrange=True
                      )
     return fig
 
@@ -177,12 +179,14 @@ def add_pieces(fig):
 @app.callback(Output('graph', 'figure'),
               [Input('graph', 'clickData'),
                Input('mode-selector', 'value'),
+               Input('layer-selector', 'value'),
                Input('fen-text', 'children')
                ])
-def update_heatmaps(click_data, mode, *args):
+def update_heatmaps(click_data, mode, layer, *args):
     fig = dash.no_update
     trigger = callback_triggered_by()
     global_data.set_visualization_mode(mode)
+    global_data.set_layer(layer)
     print('MODE', mode)
     if trigger == 'graph.clickData' and not click_data:
         return dash.no_update
@@ -199,7 +203,7 @@ def update_heatmaps(click_data, mode, *args):
     if trigger == 'fen-text.children':
         fig = heatmap_figure()
 
-    if trigger == 'mode-selector.value':
+    if trigger in ('mode-selector.value', 'layer-selector.value'):
         fig = heatmap_figure()
 
     return fig

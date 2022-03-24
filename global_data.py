@@ -10,6 +10,7 @@ class GlobalData:
 
         self.activations = activations_array
         self.visualization_mode = 'ROW'
+        self.layer = None
         self.visualization_mode_is_64x64 = False
 
         if self.number_of_heads <= 8:
@@ -27,6 +28,9 @@ class GlobalData:
         self.visualization_mode = mode
         self.visualization_mode_is_64x64 = mode == '64x64'
 
+    def set_layer(self, layer):
+        self.layer = layer
+        self.activations = layer * activations_array
 
     def get_head_data(self, head):
 

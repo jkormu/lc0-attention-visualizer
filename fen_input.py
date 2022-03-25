@@ -86,4 +86,5 @@ def add_fen(n_clicks_fen, n_clicks_startpos, fen):
         return ('', 'not valid fen', dash.no_update)
 
     print('setting fen')
+    global_data.update_activation_data()
     return ('', '', fen)

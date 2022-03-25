@@ -24,6 +24,10 @@ class GlobalData:
 
         self.subplot_rows = self.number_of_heads // self.subplot_cols #+ (self.number_of_heads % self.subplot_cols != 0)
 
+    def update_activation_data(self):
+        import numpy as np
+        self.activations = activations_array + np.random.rand(8, 64, 64)
+
     def set_visualization_mode(self, mode):
         self.visualization_mode = mode
         self.visualization_mode_is_64x64 = mode == '64x64'

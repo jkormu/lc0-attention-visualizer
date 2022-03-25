@@ -11,8 +11,6 @@ from utils import callback_triggered_by
 
 
 def heatmap_data(head):
-    import random
-    data = [[random.random() for i in range(8)] for j in range(8)]  #
     data = global_data.get_head_data(head)
     return data
 

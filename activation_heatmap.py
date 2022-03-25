@@ -84,28 +84,35 @@ def add_layout(fig):
     fig['layout'].update(layout)
 
     if global_data.visualization_mode_is_64x64:
-        tickvals = list(range(64))
-        ticktext_x = None
-        ticktext_y = None
-        showticklabels = False
+        tickvals = list(range(0, 64, 4))
+        ticktext_x = [str(i) for i in range(0, 64, 4)]
+        ticktext_y = [str(i) for i in range(0, 64, 4)]
+        ticktext_x = [x + y for x, y in zip('ae' * 8, '1122334455667788')]
+        ticktext_y = ticktext_x[::-1]
+        showticklabels = True
         val_range = [-0.5, 63.5]
+        ticks = 'outside'
     else:
         tickvals = list(range(8))#[0, 1, 2, 3, 4, 5, 6, 7]
         ticktext_x = [letter for letter in 'abcdefgh']
         ticktext_y = [letter for letter in '12345678']
         showticklabels = True
         val_range = [-0.5, 7.5]
+        ticks = ''
 
     fig.update_xaxes(title=None,
                      range=val_range,
+                     #ticklen=50,
                      zeroline=False,
                      showgrid=False,
                      scaleanchor='y',
                      constrain='domain',
                      # constraintoward='right',
+                     ticks=ticks,#ticks,
                      ticktext=ticktext_x,
                      tickvals=tickvals,
                      showticklabels=showticklabels,
+                     #mirror='ticks',
                      fixedrange=True
                      )
     fig.update_yaxes(title=None,
@@ -115,9 +122,12 @@ def add_layout(fig):
                      scaleanchor='x',
                      constrain='domain',
                      constraintoward='top',
+                     ticks=ticks,#ticks,
                      ticktext=ticktext_y,
                      tickvals=tickvals,
                      showticklabels=showticklabels,
+                     #mirror='allticks',
+                     #side='top',
                      fixedrange=True
                      )
     return fig

@@ -26,6 +26,9 @@ class GlobalData:
     #    self.update_activations_data()
     #    self.set_layer(self.selected_layer)
 
+    def get_side_to_move(self):
+        return ['Black', 'White'][self.board.turn]
+
     def load_model(self):
         self.model = tf.keras.models.load_model(self.model_path)
 

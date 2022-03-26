@@ -15,11 +15,12 @@ def fen_component():
                              style={'marginRight': '5px', 'marginBottom': '3px'})
     fen_input = dcc.Input(id='fen-input',
                           type='text',
-                          size="70",
+                          size="75",
                           autoComplete="off",
-                          style={'fontSize': '12px',
-                                 #'width': '100%',
-                                 }
+                          style={#'fontSize': '12px',
+                                 # 'width': '100%',
+                                 },
+                          placeholder=global_data.board.fen(),
                           # style={'flex': 1},
                           )
 
@@ -32,7 +33,7 @@ def fen_component():
                                      fen_input,
                                      add_startpos
                                      ],
-                           #style={'display': 'flex'},
+                           # style={'display': 'flex'},
                            )
 
     fen_text = html.Div(id='fen-text',
@@ -42,10 +43,14 @@ def fen_component():
                                'textAlign': 'center'},
                         children=global_data.fen)
     label = html.Label(html.B('Fen'), className='header-label')
+    side_to_move = html.Label(children=['Side to move: ', html.B(global_data.get_side_to_move())], id='side-to-move')
+    fen_feedback = html.B('Invalid FEN', id='fen-feedback', style={'color': 'red'}, hidden=True)
     fen_component.children = [label,
-                              #fen_input,
+                              # fen_input,
                               add_buttons,
-                              fen_text
+                              fen_text,
+                              fen_feedback,
+                              side_to_move,
                               ]
     # fen_pgn_container.children = [fen_component]
     return fen_component  # fen_pgn_container
@@ -54,6 +59,8 @@ def fen_component():
 @app.callback([Output('fen-input', "value"),
                Output('fen-input', 'placeholder'),
                Output('fen-text', 'children'),
+               Output('side-to-move', 'children'),
+               Output('fen-feedback', 'hidden')
                ],
               [Input('add-fen', 'n_clicks'),
                Input('add-startpos', 'n_clicks')],
@@ -74,17 +81,17 @@ def add_fen(n_clicks_fen, n_clicks_startpos, fen):
     if add_startpos:
         print('adding start pos')
         if n_clicks_startpos is None:
-            return (dash.no_update, dash.no_update, dash.no_update)
+            return (dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update)
         fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
     if fen is None:  # or (add_fen and (fen is None or n_clicks_fen is None)):
-        return (dash.no_update, dash.no_update, dash.no_update)
+        return (dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update)
 
     try:
         global_data.set_fen(fen)
     except ValueError:
-        return ('', 'not valid fen', dash.no_update)
+        return ('', dash.no_update, dash.no_update, dash.no_update, False) #'not valid fen'
 
     print('setting fen')
     global_data.update_activation_data()
-    return ('', '', fen)
+    return ('', fen, fen, ['Side to move: ', html.B(global_data.get_side_to_move())], True)

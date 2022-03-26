@@ -1,20 +1,39 @@
 import chess.engine
 from test_array import activations_array
 
+# class to hold data, state and configurations
+# Dash is stateless and in general it is very bad idea to store data in global variables on server side
+# However, this application is ment to be run by single user on local machine so it is safe to store data and state
+# information on global object
 class GlobalData:
     def __init__(self):
         self.fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'#'2kr3r/ppp2b2/2n4p/4p3/Q2Pq1pP/2P1N3/PP3PP1/R1B1KB1R w KQ - 3 18'#'6n1/1p1k4/3p4/pNp5/P1P4p/7P/1P4KP/r7 w - - 2 121'#
         self.board = chess.Board(fen=self.fen)
         self.focused_square_ind = 0
-        self.number_of_heads = 8
 
         self.activations = activations_array
         self.visualization_mode = 'ROW'
-        self.layer = None
+        self.selected_layer = None
         self.visualization_mode_is_64x64 = False
         self.subplot_cols = 0
         self.subplot_rows = 0
+        self.number_of_heads = 8
         self.update_grid_shape()
+
+    #    self.model_path = '...'
+    #    self.load_model()
+    #    self.activations_data = None
+    #    self.update_activations_data()
+    #    self.set_layer(self.selected_layer)
+
+    def load_model(self):
+        self.model = tf.keras.models.load_model(self.model_path)
+
+    def update_activations_data(self):
+        inputs = board2planes(board)
+        inputs = tf.reshape(tf.convert_to_tensor(inputs, dtype=tf.float32), [-1, 112, 8, 8])
+        _, _, _, self.activations_data = self.model(inputs)
+        #self.activations = self.activations_data[self.selected_layer]
 
     def update_grid_shape(self):
         if self.number_of_heads <= 8:
@@ -36,8 +55,9 @@ class GlobalData:
 
     def set_layer(self, layer):
         #TODO
-        self.layer = layer
+        self.selected_layer = layer
         self.activations = layer * activations_array
+        #self.activations = self.activations_data[self.layer]
         self.number_of_heads = 8 #TODO update number of heads in the layer
         self.update_grid_shape()
 

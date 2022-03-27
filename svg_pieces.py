@@ -11,8 +11,8 @@ import base64
 #    svg_piece = 'data:image/svg+xml;base64,{}'.format(encoded.decode())
 #    return svg_piece
 
-def get_svg_board(board, focused_square_ind):
-    svg_str = str(svg.board(board, squares=[focused_square_ind], arrows=[], lastmove=None, coordinates=False))
+def get_svg_board(board, focused_square_ind, only_pieces):
+    svg_str = str(svg.board(board, squares=[focused_square_ind], arrows=[], lastmove=None, coordinates=False, only_pieces=only_pieces))
     svg_byte = svg_str.encode()
     encoded = base64.b64encode(svg_byte)
     svg_board = 'data:image/svg+xml;base64,{}'.format(encoded.decode())

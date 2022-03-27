@@ -20,6 +20,8 @@ class GlobalData:
         self.number_of_heads = 8
         self.update_grid_shape()
 
+        self.pgn_data = [] #list of boards
+
     #    self.model_path = '...'
     #    self.load_model()
     #    self.activations_data = None

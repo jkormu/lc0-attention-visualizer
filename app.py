@@ -4,6 +4,7 @@ from dash import dcc, html
 from activation_heatmap import heatmap
 from fen_input import fen_component
 from controls import mode_selector, layer_selector
+from pgn_pane import pgn_pane
 
 DEBUG = False
 
@@ -20,7 +21,7 @@ else:
     RIGHT_CONTAINER_BG = WHITE
     GRAPH_CONTAINER_BG = WHITE
     CONFIG_CONTAINER_BG = WHITE
-LEFT_PANE_WIDTH = 100
+LEFT_PANE_WIDTH = 85
 RIGHT_PANE_WIDTH = 100 - LEFT_PANE_WIDTH
 GRAPH_PANE_HEIGHT = 100
 
@@ -50,7 +51,7 @@ right_container = html.Div(
            }
 )
 
-right_container.children = []
+right_container.children = [pgn_pane()]
 
 header_container = html.Div(children=[
     fen_component(),
@@ -64,7 +65,7 @@ header_container = html.Div(children=[
 
 top_container = html.Div(children=[
     left_container,
-    #right_container,
+    right_container,
     # left_container,
 ],
     style={'height': '90%', 'width': '100%', 'backgroundColor': APP_CONTAINER_BG,

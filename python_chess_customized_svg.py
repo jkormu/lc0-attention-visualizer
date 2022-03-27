@@ -158,7 +158,8 @@ def board(board: Optional[chess.BaseBoard] = None, *,
           arrows: Iterable[Union[Arrow, Tuple[chess.Square, chess.Square]]] = (),
           size: Optional[int] = None,
           style: Optional[str] = None,
-          square_colors: Iterable[str] = ()) -> str:
+          square_colors: Iterable[str] = (), #TODO: remove as it is not needed anymore
+          only_pieces: bool = False) -> str:
     """
     Renders a board with pieces and/or selected squares as an SVG image.
     :param board: A :class:`chess.BaseBoard` for a chessboard with pieces or
@@ -200,8 +201,8 @@ def board(board: Optional[chess.BaseBoard] = None, *,
     if squares:
         defs.append(ET.fromstring(XX))
 
-    #if check is not None:
-    #    defs.append(ET.fromstring(CHECK_GRADIENT))
+    if check is not None and not only_pieces:
+        defs.append(ET.fromstring(CHECK_GRADIENT))
 
     for square, bb in enumerate(chess.BB_SQUARES):
         file_index = chess.square_file(square)
@@ -219,26 +220,26 @@ def board(board: Optional[chess.BaseBoard] = None, *,
             fill_color = square_colors[square]
 
         cls.append(chess.SQUARE_NAMES[square])
+        if not only_pieces:
+            ET.SubElement(svg, "rect", {
+                "x": str(x),
+                "y": str(y),
+                "width": str(SQUARE_SIZE),
+                "height": str(SQUARE_SIZE),
+                "class": " ".join(cls),
+                "stroke": "none",
+                "fill": fill_color,
+            })
 
-    #    ET.SubElement(svg, "rect", {
-    #        "x": str(x),
-    #        "y": str(y),
-    #        "width": str(SQUARE_SIZE),
-    #        "height": str(SQUARE_SIZE),
-    #        "class": " ".join(cls),
-    #        "stroke": "none",
-    #        "fill": fill_color,
-    #    })
-
-    #    if square == check:
-    #        ET.SubElement(svg, "rect", {
-    #            "x": str(x),
-    #            "y": str(y),
-    #            "width": str(SQUARE_SIZE),
-    #            "height": str(SQUARE_SIZE),
-    #            "class": "check",
-    #            "fill": "url(#check_gradient)",
-    #        })
+            if square == check:
+                ET.SubElement(svg, "rect", {
+                    "x": str(x),
+                    "y": str(y),
+                    "width": str(SQUARE_SIZE),
+                    "height": str(SQUARE_SIZE),
+                    "class": "check",
+                    "fill": "url(#check_gradient)",
+                })
 
         # Render pieces.
         if board is not None:

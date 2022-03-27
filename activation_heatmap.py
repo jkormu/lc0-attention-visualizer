@@ -15,10 +15,10 @@ def heatmap_data(head):
     return data
 
 
-def get_pieces():
-    board = global_data.board.__str__()
-    board = [c for c in board[::-1] if c != ' ' and c != '\n']
-    return board
+#def get_pieces():
+#    board = global_data.board.__str__()
+#    board = [c for c in board[::-1] if c != ' ' and c != '\n']
+#    return board
 
 
 def heatmap_figure():
@@ -164,7 +164,7 @@ def add_heatmap_traces(fig):
 
 
 def add_pieces(fig):
-    board_svg = get_svg_board(global_data.board, global_data.focused_square_ind)
+    board_svg = get_svg_board(global_data.board, global_data.focused_square_ind, True)
     fig.add_layout_image(
         dict(
             source=board_svg,

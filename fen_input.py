@@ -93,5 +93,5 @@ def add_fen(n_clicks_fen, n_clicks_startpos, fen):
         return ('', dash.no_update, dash.no_update, dash.no_update, False) #'not valid fen'
 
     print('setting fen')
-    global_data.update_activation_data()
+    global_data.update_selected_activation_data()
     return ('', fen, fen, ['Side to move: ', html.B(global_data.get_side_to_move())], True)

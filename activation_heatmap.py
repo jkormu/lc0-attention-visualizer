@@ -45,14 +45,14 @@ def heatmap_figure():
 def heatmap():
     fig = heatmap_figure()
 
-    graph_component = html.Div(style={'height': '100%', 'width': '100%',  # "overflow": "auto"
+    graph_component = html.Div(style={'height': '100%', 'width': '100%',  "overflow": "auto"
                                       })
 
     config = {  # 'displayModeBar': True,
         'displaylogo': False,
         'modeBarButtonsToRemove': ['zoom', 'pan', 'select', 'zoomIn', 'zoomOut', 'autoScale', 'resetScale']}
 
-    graph_component.children = [dcc.Graph(figure=fig, id='graph', style={'height': '100%', 'width': '100%'},
+    graph_component.children = [dcc.Graph(figure=fig, id='graph', style={'height': global_data.figure_container_height, 'width': '100%'},
                                           responsive=True,
                                           config=config
                                           )]
@@ -136,6 +136,8 @@ def add_layout(fig):
 def add_heatmap_trace(fig, row, col):
     head = (row - 1) * global_data.subplot_cols + (col - 1)
     data = heatmap_data(head)
+    if data is None:
+        return fig
 
     if global_data.visualization_mode_is_64x64:
         xgap, ygap = 0, 0
@@ -180,11 +182,13 @@ def add_pieces(fig):
         ),
         row='all',
         col='all',
+        exclude_empty_subplots=True,
     )
     return fig
 
 
-@app.callback(Output('graph', 'figure'),
+@app.callback([Output('graph', 'figure'),
+               Output('graph', 'style')],
               [Input('graph', 'clickData'),
                Input('mode-selector', 'value'),
                Input('layer-selector', 'value'),
@@ -195,9 +199,10 @@ def update_heatmaps(click_data, mode, layer, *args):
     trigger = callback_triggered_by()
     global_data.set_visualization_mode(mode)
     global_data.set_layer(layer)
+    style = {'height': global_data.figure_container_height, 'width': '100%'}
     print('MODE', mode)
     if trigger == 'graph.clickData' and not click_data:
-        return dash.no_update
+        return dash.no_update, dash.no_update
 
     if trigger == 'graph.clickData' and not global_data.visualization_mode_is_64x64:
         point = click_data['points'][0]
@@ -214,6 +219,6 @@ def update_heatmaps(click_data, mode, layer, *args):
     if trigger in ('mode-selector.value', 'layer-selector.value'):
         fig = heatmap_figure()
 
-    return fig
+    return fig, style
 
 

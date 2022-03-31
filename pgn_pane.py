@@ -83,7 +83,8 @@ def parse_pgn(contents, filename, is_new_pgn):
 
 @app.callback(
     [Output('pgn-info', 'children'),
-     Output('move-table', 'data')],
+     Output('move-table', 'data'),
+     Output('table-container', 'hidden')],
     [Input('upload-pgn', 'contents'),
      ],
     [State('upload-pgn', 'filename')]
@@ -99,7 +100,10 @@ def update_pgn(content, filename):
     #    return ''
     info = parse_pgn(content, filename, is_new_pgn)
     table_data = get_datatable_data()
-    return (info, table_data)
+
+    hidden = global_data.pgn_data == []
+
+    return (info, table_data, hidden)
 
 def pgn_pane():
 
@@ -190,8 +194,9 @@ def make_datatable():
               "rule": "max-height: none;"}],
     )
 
-    container = html.Div(html.Div(children=table, style={'borderLeft': f'1px solid grey', 'borderTop': f'1px solid grey'}),
-    style={'flex': '1', 'overflow': 'auto', })
+    container = html.Div(id='table-container', children=html.Div(children=table, style={'borderLeft': f'1px solid grey', 'borderTop': f'1px solid grey'}),
+    style={'flex': '1', 'overflow': 'auto', },
+                         hidden=True)
 
     return container
 

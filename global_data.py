@@ -6,7 +6,7 @@ from board2planes import board2planes
 #turn off tensorflow importing and gerenerate random data to speed up development
 SIMULATE_TF = True
 SIMULATED_LAYERS = 6
-SIMULATED_HEADS = 13
+SIMULATED_HEADS = 14
 FIXED_ROW = None #1 #None to disable
 FIXED_COL = None #5 #None to disable
 if SIMULATE_TF:

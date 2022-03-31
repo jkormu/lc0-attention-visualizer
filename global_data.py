@@ -85,7 +85,7 @@ class GlobalData:
     def update_grid_shape(self):
         #TODO: add client side callback triggered by Interval component to save window or precise container dimensions to Div
         #TODO: Trigger server side figure update callback when dimensions are recorded and store in global_data
-        #TODO: If needed, recalculate subplot rows and cols and container scaler
+        #TODO: If needed, recalculate subplot rows and cols and container scaler based on the changed dimension
 
         def calc_cols(heads, rows):
             if heads % rows == 0:

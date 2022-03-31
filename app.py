@@ -35,7 +35,7 @@ left_container = html.Div(
 
 graph_container = html.Div(
     style={'height': f'{GRAPH_PANE_HEIGHT}%', 'width': '100%', 'backgroundColor': GRAPH_CONTAINER_BG,
-           #'position': 'relative',
+           # 'position': 'relative',
            }
 )
 # html.Div(children=['GRAPH'])
@@ -47,7 +47,8 @@ left_container.children = [graph_container]
 
 right_container = html.Div(
     style={'height': '100%', 'width': f'{RIGHT_PANE_WIDTH}%', 'backgroundColor': RIGHT_CONTAINER_BG,
-           'paddingLeft': 5, 'boxSizing': 'border-box'
+           'paddingLeft': 5, 'boxSizing': 'border-box',
+           #'display': 'flex', #'flexDirection': 'column'
            }
 )
 
@@ -61,7 +62,7 @@ header_container = html.Div(children=[
     className='header-container',
     style={'height': '10%', 'width': '100%', 'backgroundColor': APP_CONTAINER_BG,
            'display': 'flex', 'flexDirection': 'row', 'alignItems:': 'flex-end',
-})
+           })
 
 top_container = html.Div(children=[
     left_container,
@@ -69,19 +70,23 @@ top_container = html.Div(children=[
     # left_container,
 ],
     style={'height': '90%', 'width': '100%', 'backgroundColor': APP_CONTAINER_BG,
-           'display': 'flex', 'flexDirection': 'row', 'alignItems:': 'flex-end', 'overflow': 'auto'})
+           'display': 'flex', 'flexDirection': 'row', 'alignItems:': 'flex-end',
+           # 'overflow': 'auto',
+           })
 
-#bottom_container = html.Div(children=[
-#],
+# bottom_container = html.Div(children=[
+# ],
 #    style={'height': '40%', 'width': '100%', 'backgroundColor': APP_CONTAINER_BG,
 #           'display': 'flex', 'flexDirection': 'row', 'alignItems:': 'flex-end', 'overflow': 'auto'})
 
 layout = html.Div(children=[header_container,
                             top_container,
-                            #bottom_container,
+                            # bottom_container,
                             # left_container,
                             ],
                   style={'height': '100vh', 'width': '100vw', 'backgroundColor': APP_CONTAINER_BG,
-                         'display': 'flex', 'flexDirection': 'column', 'alignItems:': 'flex-end', 'overflow': 'auto'})
+                         'display': 'flex', 'flexDirection': 'column', 'alignItems:': 'flex-end',
+                         # 'overflow': 'auto',
+                         })
 
 app.layout = layout

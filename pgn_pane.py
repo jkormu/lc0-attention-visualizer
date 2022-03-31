@@ -26,67 +26,7 @@ PGN_COMPONENT_STYLE = {
 }
 
 
-def pgn_pane():
-    container = html.Div(style={
-        #       'position': 'relative',
-        # 'width': '100%',
-        # 'paddingBottom': FEN_PGN_COMPONENT_RELATIVE_HEIGHT,
-        #       'float': 'left',
-        #    'height': 0,
-    })
 
-    # fen_component = html.Div(id='fen-component', style=FEN_COMPONENT_STYLE)
-    # add_button = html.Button(id='add-fen',
-    #                         children=['Add fen'],
-    #                         style={'marginRight': '5px', 'marginBottom': '3px'})
-    # fen_input = dcc.Input(id='fen-input',
-    #                      type='text',
-    #                      #size="70",#"92", #"70"
-    #                      autoComplete="off",
-    #                      style={'font-size': '12px', 'width': '100%'}
-    #                      #style={'flex': 1},
-    #                      )
-
-    # click_mode = dcc.Checklist(id='click-mode',
-    #                                  options=[{'label': 'Add also parents of clicked node',
-    #                                            'value': 'add-also-parents'}],
-    #                                  value=['add-also-parents'])
-
-    # add_startpos = html.Button(id='add-startpos',
-    #                         children=['Add start position'],
-    #                         style={'marginRight': '5px', 'marginBottom': '3px'}) #, 'marginTop': '5px'
-
-    # add_buttons = html.Div(children=[add_button, add_startpos],
-    #                       style={'display': 'flex'})
-    #
-    upload = dcc.Upload(
-        id='upload-pgn',
-        children=[html.Div(style={'flex': 1}),
-                  html.Div([
-                      'Drag and Drop a pgn file or ',
-                      html.A('Select File')
-                  ],
-                      style={'flex': 1}
-                  ),
-                  html.Div(style={'flex': 1}
-                           ),
-                  ],
-        style=PGN_COMPONENT_STYLE,
-        # Only one pgn allowed
-        multiple=False
-    )
-    pgn_info = html.Div(id='pgn-info',
-                        style={'height': '5em'},
-                        hidden=True)
-
-    move_table = make_datatable()
-
-    # fen_added_indicator = html.Div(id='fen-added', style={'display': 'none'})
-    # fen_deleted_indicator = html.Div(id='data-deleted-indicator', style={'display': 'none'})
-    # fen_component.children = [add_buttons, fen_input, click_mode, fen_added_indicator, fen_deleted_indicator]
-    # fen_pgn_container.children = [fen_component, upload]
-    container.children = [upload, pgn_info, move_table]
-    return container
 
 
 def parse_pgn(contents, filename, is_new_pgn):
@@ -161,24 +101,99 @@ def update_pgn(content, filename):
     table_data = get_datatable_data()
     return (info, table_data)
 
+def pgn_pane():
+
+    container = html.Div(style={'height': '100%',
+                                'display': 'flex', 'flexDirection': 'column',
+        #       'position': 'relative',
+        # 'width': '100%',
+        # 'paddingBottom': FEN_PGN_COMPONENT_RELATIVE_HEIGHT,
+        #       'float': 'left',
+        #    'height': 0,
+    })
+
+    # fen_component = html.Div(id='fen-component', style=FEN_COMPONENT_STYLE)
+    # add_button = html.Button(id='add-fen',
+    #                         children=['Add fen'],
+    #                         style={'marginRight': '5px', 'marginBottom': '3px'})
+    # fen_input = dcc.Input(id='fen-input',
+    #                      type='text',
+    #                      #size="70",#"92", #"70"
+    #                      autoComplete="off",
+    #                      style={'font-size': '12px', 'width': '100%'}
+    #                      #style={'flex': 1},
+    #                      )
+
+    # click_mode = dcc.Checklist(id='click-mode',
+    #                                  options=[{'label': 'Add also parents of clicked node',
+    #                                            'value': 'add-also-parents'}],
+    #                                  value=['add-also-parents'])
+
+    # add_startpos = html.Button(id='add-startpos',
+    #                         children=['Add start position'],
+    #                         style={'marginRight': '5px', 'marginBottom': '3px'}) #, 'marginTop': '5px'
+
+    # add_buttons = html.Div(children=[add_button, add_startpos],
+    #                       style={'display': 'flex'})
+    #
+    upload = dcc.Upload(
+        id='upload-pgn',
+        children=[html.Div(style={'flex': 1}),
+                  html.Div([
+                      'Drag and Drop a pgn file or ',
+                      html.A('Select File')
+                  ],
+                      style={'flex': 1}
+                  ),
+                  html.Div(style={'flex': 1}
+                           ),
+                  ],
+        style=PGN_COMPONENT_STYLE,
+        # Only one pgn allowed
+        multiple=False
+    )
+    pgn_info = html.Div(id='pgn-info',
+                        style={'height': '5em'},
+                        hidden=True)
+
+    move_table = make_datatable()
+
+    # fen_added_indicator = html.Div(id='fen-added', style={'display': 'none'})
+    # fen_deleted_indicator = html.Div(id='data-deleted-indicator', style={'display': 'none'})
+    # fen_component.children = [add_buttons, fen_input, click_mode, fen_added_indicator, fen_deleted_indicator]
+    # fen_pgn_container.children = [fen_component, upload]
+    container.children = [upload, pgn_info, move_table]
+    return container
 
 def make_datatable():
     table = dash_table.DataTable(
         id='move-table',
-        # css=[dict(selector="p", rule="margin: 0px;")],
         data=None,
         columns=[
-            {"id": 'Move', "name": 'Move'},
+            {"name": '', "id": 'dummy_left'},
+            {"id": 'Move', "name": '#'},
             {"id": 'White', "name": 'White'},
-            {"id": 'Black', "name": 'Black'}
-            #{"id": name, "name": name, "selectable": True if name != 'Move' else False} for name in ('Move', 'White', 'Black')
+            {"id": 'Black', "name": 'Black'},
+            {"name": '', "id": 'dummy_right'}
         ],
         style_data={'border': 'none'},
-        style_table={'border': '1px solid grey'}
-        # markdown_options={"html": True},
-        # style_table={"width": 200},
+        #style_table={'width': '100%', 'marginLeft': '0px', 'overflowY': 'auto', },
+        style_table={'width': '100%', 'marginLeft': '0px', 'overflowY': 'auto',
+                     },
+        style_header={
+            #'backgroundColor': 'rgb(230, 230, 230)',
+            'fontWeight': 'bold',
+            'border': 'none'
+        },
+        css=[{"selector": "table", "rule": "width: 100%;"},
+             {"selector": ".dash-spreadsheet.dash-freeze-top, .dash-spreadsheet .dash-virtualized",
+              "rule": "max-height: none;"}],
     )
-    return table
+
+    container = html.Div(html.Div(children=table, style={'borderLeft': f'1px solid grey', 'borderTop': f'1px solid grey'}),
+    style={'flex': '1', 'overflow': 'auto', })
+
+    return container
 
 def get_last_move_as_san(board):
     move = board.pop()

@@ -3,7 +3,7 @@ from server import app
 from dash import dcc, html
 from activation_heatmap import heatmap
 from fen_input import fen_component
-from controls import mode_selector, layer_selector
+from controls import mode_selector, layer_selector, model_selector
 from pgn_pane import pgn_pane
 
 DEBUG = False
@@ -58,6 +58,7 @@ header_container = html.Div(children=[
     fen_component(),
     mode_selector(),
     layer_selector(),
+    model_selector(),
 ],
     className='header-container',
     style={'height': '10%', 'width': '100%', 'backgroundColor': APP_CONTAINER_BG,

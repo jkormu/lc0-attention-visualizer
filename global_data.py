@@ -1,17 +1,21 @@
 import chess.engine
+from constants import ROOT_DIR
 #from test_array import activations_array
 
 from board2planes import board2planes
 
 #turn off tensorflow importing and gerenerate random data to speed up development
-SIMULATE_TF = True
+SIMULATE_TF = False#True
 SIMULATED_LAYERS = 6
 SIMULATED_HEADS = 14
 FIXED_ROW = None #1 #None to disable
 FIXED_COL = None #5 #None to disable
 if SIMULATE_TF:
     import numpy as np
-
+else:
+    import tensorflow as tf
+    from tensorflow.compat.v1 import ConfigProto
+    from tensorflow.compat.v1 import InteractiveSession
 # class to hold data, state and configurations
 # Dash is stateless and in general it is very bad idea to store data in global variables on server side
 # However, this application is ment to be run by single user on local machine so it is safe to store data and state
@@ -20,11 +24,11 @@ class GlobalData:
     def __init__(self):
         import os
         if not SIMULATE_TF:
-            import tensorflow as tf
+            #import tensorflow as tf
             os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-            from tensorflow.compat.v1 import ConfigProto
-            from tensorflow.compat.v1 import InteractiveSession
+            #from tensorflow.compat.v1 import ConfigProto
+            #from tensorflow.compat.v1 import InteractiveSession
             # import chess
             # import matplotlib.patheffects as path_effects
 
@@ -33,7 +37,7 @@ class GlobalData:
             session = InteractiveSession(config=config)
             tf.keras.backend.clear_session()
 
-
+        self.tmp = 0
         self.fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'#'2kr3r/ppp2b2/2n4p/4p3/Q2Pq1pP/2P1N3/PP3PP1/R1B1KB1R w KQ - 3 18'#'6n1/1p1k4/3p4/pNp5/P1P4p/7P/1P4KP/r7 w - - 2 121'#
         self.board = chess.Board(fen=self.fen)
         self.focused_square_ind = 0
@@ -54,7 +58,11 @@ class GlobalData:
         self.selected_layer = 0
         self.nr_of_layers_in_body = -1
 
-        self.model_path = '/home/jusufe/PycharmProjects/lc0-attention-visualizer/T12_saved_model_1M'
+        self.model_paths = []
+        self.model_folders = []
+        self.model_cache = {}
+        self.find_models()
+        self.model_path = self.model_paths[0] #'/home/jusufe/PycharmProjects/lc0-attention-visualizer/T12_saved_model_1M'
         self.model = None
         if not SIMULATE_TF:
             self.load_model()
@@ -66,7 +74,25 @@ class GlobalData:
         return ['Black', 'White'][self.board.turn]
 
     def load_model(self):
-        self.model = tf.saved_model.load(self.model_path)  # tf.keras.models.load_model(root)
+        if self.model_path in self.model_cache:
+            self.model = self.model_cache[self.model_path]
+        else:
+            self.model = tf.saved_model.load(self.model_path)  # tf.keras.models.load_model(root)
+
+
+    def find_models(self):
+        import os
+        from os.path import isdir, join
+        root = ROOT_DIR
+        models_root_folder = os.path.join(root, 'models')
+        model_folders = [f for f in os.listdir(models_root_folder) if isdir(join(models_root_folder, f))]
+        model_paths = [os.path.relpath(join(models_root_folder, f)) for f in os.listdir(models_root_folder) if isdir(join(models_root_folder, f))]
+        self.model_folders = model_folders
+        self.model_paths = model_paths
+
+        print('MODELS:')
+        print(self.model_folders)
+        print(self.model_paths)
 
     def update_activations_data(self):
         if not SIMULATE_TF:
@@ -77,6 +103,9 @@ class GlobalData:
             layers = SIMULATED_LAYERS
             heads = SIMULATED_HEADS
             self.activations_data = [np.random.rand(1, heads, 64, 64) for i in range(layers)]
+
+        if self.model_path not in self.model_cache:
+            self.model_cache[self.model_path] = self.model
 
         self.update_layers_in_body_count()
         #self.update_selected_activation_data()
@@ -149,13 +178,20 @@ class GlobalData:
         self.visualization_mode_is_64x64 = mode == '64x64'
 
     def set_layer(self, layer):
-        #TODO
         self.selected_layer = layer
         self.update_selected_activation_data()
         #self.activations = layer * activations_array
         #self.activations = self.activations_data[self.layer]
         self.number_of_heads = self.activations_data[self.selected_layer].shape[1]
         print('NUMBER OF HEADS', self.number_of_heads)
+        self.update_grid_shape()
+
+    def set_model(self, model):
+        self.model_path = model
+        self.load_model()
+        self.update_activations_data()
+        self.update_selected_activation_data()
+        self.number_of_heads = self.activations_data[self.selected_layer].shape[1]
         self.update_grid_shape()
 
     def update_layers_in_body_count(self):

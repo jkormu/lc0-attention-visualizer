@@ -14,13 +14,6 @@ def heatmap_data(head):
     data = global_data.get_head_data(head)
     return data
 
-
-#def get_pieces():
-#    board = global_data.board.__str__()
-#    board = [c for c in board[::-1] if c != ' ' and c != '\n']
-#    return board
-
-
 def heatmap_figure():
     import time
     start = time.time()
@@ -45,32 +38,32 @@ def heatmap_figure():
 def heatmap():
     fig = heatmap_figure()
 
-    graph_component = html.Div(style={'height': '100%', 'width': '100%',  "overflow": "auto"
+    graph_component = html.Div(id='graph-container', style={'height': '100%', 'width': '100%', "overflow": "auto"
                                       })
 
-    config = {  # 'displayModeBar': True,
+    config = {
         'displaylogo': False,
         'modeBarButtonsToRemove': ['zoom', 'pan', 'select', 'zoomIn', 'zoomOut', 'autoScale', 'resetScale']}
 
-    graph_component.children = [dcc.Graph(figure=fig, id='graph', style={'height': global_data.figure_container_height, 'width': '100%'},
-                                          responsive=True,
-                                          config=config
-                                          )]
+    style = {'height': global_data.figure_container_height, 'width': '100%'}
+
+    graph_component.children = [
+        dcc.Graph(figure=fig, id='graph', style=style,
+                  responsive=True,
+                  config=config
+                  )]
 
     return graph_component
 
 
 def make_figure():
     titles = [f"Head {i + 1}" for i in range(global_data.number_of_heads)]
+    print('MAKING SUBPLOTS', 'rows:', global_data.subplot_rows, 'cols:', global_data.subplot_cols)
+    print('NUMBER OF HEADS:', global_data.number_of_heads)
     fig = make_subplots(rows=global_data.subplot_rows, cols=global_data.subplot_cols, subplot_titles=titles,
                         horizontal_spacing=0.1 / global_data.subplot_cols,
                         vertical_spacing=0.25 / global_data.subplot_rows,
                         )
-    # fig.update_layout(
-    #    autosize=True
-    #    )
-    # fig.update_yaxes(automargin=True)
-    # fig.update_xaxes(automargin=True)
     return fig
 
 
@@ -93,7 +86,7 @@ def add_layout(fig):
         val_range = [-0.5, 63.5]
         ticks = 'outside'
     else:
-        tickvals = list(range(8))#[0, 1, 2, 3, 4, 5, 6, 7]
+        tickvals = list(range(8))  # [0, 1, 2, 3, 4, 5, 6, 7]
         ticktext_x = [letter for letter in 'abcdefgh']
         ticktext_y = [letter for letter in '12345678']
         showticklabels = True
@@ -102,17 +95,17 @@ def add_layout(fig):
 
     fig.update_xaxes(title=None,
                      range=val_range,
-                     #ticklen=50,
+                     # ticklen=50,
                      zeroline=False,
                      showgrid=False,
                      scaleanchor='y',
                      constrain='domain',
                      # constraintoward='right',
-                     ticks=ticks,#ticks,
+                     ticks=ticks,  # ticks,
                      ticktext=ticktext_x,
                      tickvals=tickvals,
                      showticklabels=showticklabels,
-                     #mirror='ticks',
+                     # mirror='ticks',
                      fixedrange=True
                      )
     fig.update_yaxes(title=None,
@@ -122,18 +115,19 @@ def add_layout(fig):
                      scaleanchor='x',
                      constrain='domain',
                      constraintoward='top',
-                     ticks=ticks,#ticks,
+                     ticks=ticks,  # ticks,
                      ticktext=ticktext_y,
                      tickvals=tickvals,
                      showticklabels=showticklabels,
-                     #mirror='allticks',
-                     #side='top',
+                     # mirror='allticks',
+                     # side='top',
                      fixedrange=True
                      )
     return fig
 
 
 def add_heatmap_trace(fig, row, col):
+    print('ADDING heatmap', row, col)
     head = (row - 1) * global_data.subplot_cols + (col - 1)
     data = heatmap_data(head)
     if data is None:
@@ -187,14 +181,53 @@ def add_pieces(fig):
     return fig
 
 
+@app.callback(Output('graph-container', 'children'),
+              [Input('graph', 'clickData'),
+               Input('mode-selector', 'value'),
+               Input('layer-selector', 'value'),
+               Input('model-selector', 'value'),
+               Input('fen-text', 'children')
+               ])
+def update_heatmaps(click_data, mode, layer, model, *args):
+    graph = dash.no_update
+    trigger = callback_triggered_by()
+    global_data.set_visualization_mode(mode)
+    global_data.set_layer(layer)
+    print('MODE', mode)
+    if trigger == 'graph.clickData' and not click_data:
+        return dash.no_update, dash.no_update
+
+    if trigger == 'graph.clickData' and not global_data.visualization_mode_is_64x64:
+        point = click_data['points'][0]
+        x = point['x']
+        y = point['y']
+        square_ind = 8 * y + x
+        if square_ind != global_data.focused_square_ind:
+            global_data.focused_square_ind = square_ind
+            graph = heatmap()
+
+    if trigger == 'fen-text.children':
+        graph = heatmap()
+
+    if trigger in ('mode-selector.value', 'layer-selector.value'):
+        graph = heatmap()
+
+    if trigger == 'model-selector.value':
+        global_data.set_model(model)
+        graph = heatmap()
+
+    return graph
+
+a = """" 
 @app.callback([Output('graph', 'figure'),
                Output('graph', 'style')],
               [Input('graph', 'clickData'),
                Input('mode-selector', 'value'),
                Input('layer-selector', 'value'),
+               Input('model-selector', 'value'),
                Input('fen-text', 'children')
                ])
-def update_heatmaps(click_data, mode, layer, *args):
+def update_heatmaps(click_data, mode, layer, model, *args):
     fig = dash.no_update
     trigger = callback_triggered_by()
     global_data.set_visualization_mode(mode)
@@ -219,6 +252,21 @@ def update_heatmaps(click_data, mode, layer, *args):
     if trigger in ('mode-selector.value', 'layer-selector.value'):
         fig = heatmap_figure()
 
+    model_selector = False
+    if trigger == 'model-selector.value':
+        global_data.set_model(model)
+        print(fig)
+        print('--------------------------------------------------------------------------------------------')
+        fig = heatmap_figure()
+        model_selector = True
+        #print(fig)
+    if model_selector:
+        prefix = 'selected'
+    else:
+        prefix = 'initial'
+    with open(f'{prefix}_{global_data.tmp}_fig{global_data.subplot_rows}x{global_data.subplot_cols}.txt', "w") as f:
+        f.write(fig.__str__())
+    global_data.tmp += 1
     return fig, style
 
-
+"""

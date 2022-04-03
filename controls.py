@@ -58,5 +58,21 @@ def model_selector():
         style={'width': '200px'},
         id='model-selector'
     )
-    model_selector_container.children = [label, selector]
+    # store selected model_path in hidden Div. This is to chain callbacks in correct order: Model selection should
+    # first update selected layer as new model might have fewer layers than the current selected layer number. Once
+    # selected layer is updated, only then it is safe to update Graph. So graph update callback is tied to model
+    # holder changes and not directly to dropdown value
+    selected_model_holder = html.Div(id='selected-model', children=global_data.model_paths[0], hidden=True)
+    model_selector_container.children = [label, selector, selected_model_holder]
     return model_selector_container
+
+
+@app.callback([Output('selected-model', 'children'),
+               Output('layer-selector', 'options'),
+               Output('layer-selector', 'value')
+               ],
+              Input('model-selector', 'value'),
+              )
+def update_selected_model(model):
+    global_data.set_model(model)
+    return model, get_layer_options(), global_data.selected_layer

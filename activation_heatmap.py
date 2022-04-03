@@ -221,7 +221,7 @@ def add_pieces(fig):
               [Input('graph', 'clickData'),
                Input('mode-selector', 'value'),
                Input('layer-selector', 'value'),
-               Input('model-selector', 'value'),
+               Input('selected-model', 'children'),
                Input('fen-text', 'children')
                ])
 def update_heatmaps(click_data, mode, layer, model, *args):
@@ -231,7 +231,7 @@ def update_heatmaps(click_data, mode, layer, model, *args):
     global_data.set_layer(layer)
     print('MODE', mode)
     if trigger == 'graph.clickData' and not click_data:
-        return dash.no_update, dash.no_update
+        return dash.no_update#, dash.no_update, dash.no_update
 
     if trigger == 'graph.clickData' and not global_data.visualization_mode_is_64x64:
         point = click_data['points'][0]
@@ -248,8 +248,7 @@ def update_heatmaps(click_data, mode, layer, model, *args):
     if trigger in ('mode-selector.value', 'layer-selector.value'):
         graph = heatmap()
 
-    if trigger == 'model-selector.value':
-        global_data.set_model(model)
+    if trigger == 'selected-model.children':
         graph = heatmap()
 
     return graph

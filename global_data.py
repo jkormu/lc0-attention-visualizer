@@ -201,12 +201,13 @@ class GlobalData:
         self.update_grid_shape()
 
     def set_model(self, model):
-        self.model_path = model
-        self.load_model()
-        self.update_activations_data()
-        self.update_selected_activation_data()
-        self.number_of_heads = self.activations_data[self.selected_layer].shape[1]
-        self.update_grid_shape()
+        if model != self.model_path:
+            self.model_path = model
+            self.load_model()
+            self.update_activations_data()
+            self.update_selected_activation_data()
+            self.number_of_heads = self.activations_data[self.selected_layer].shape[1]
+            self.update_grid_shape()
 
     def update_layers_in_body_count(self):
         #TODO: figure out robust way to separate attention layers in body from the rest.
@@ -217,6 +218,7 @@ class GlobalData:
                 ind = ind - 1
                 break
         self.nr_of_layers_in_body = ind + 1
+        self.selected_layer = min(self.selected_layer, self.nr_of_layers_in_body - 1)
 
     def get_head_data(self, head):
 

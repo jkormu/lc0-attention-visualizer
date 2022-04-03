@@ -53,7 +53,7 @@ def model_selector():
                      in zip(global_data.model_folders, global_data.model_paths)]
     selector = dcc.Dropdown(
         options=model_options,
-        value=None,
+        value=global_data.model_paths[0],
         clearable=False,
         style={'width': '200px'},
         id='model-selector'

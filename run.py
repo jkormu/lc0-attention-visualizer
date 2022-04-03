@@ -9,4 +9,4 @@ def open_browser():
 
 if __name__ == '__main__':
     #Timer(1, open_browser).start() #open browser with delay so server has time to start up
-    app.run_server(debug=True, threaded=True)
+    app.run_server(debug=True, threaded=True, use_reloader=False, dev_tools_hot_reload=False)

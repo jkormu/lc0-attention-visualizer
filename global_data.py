@@ -50,6 +50,14 @@ class GlobalData:
         self.subplot_rows = 0
         self.number_of_heads = 8
         self.figure_container_height = '100%'#'100%'
+
+        #self.has_subplot_grid_changed = True
+        #self.figure_layout_images = None #store layout and only recalculate when subplot grid has changed
+        #self.figure_layout_annotations = None
+        #self.need_update_axis = True
+
+        self.figure_cache = {}
+
         self.update_grid_shape()
 
 
@@ -69,6 +77,26 @@ class GlobalData:
         self.activations_data = None
         self.update_activations_data()
         self.set_layer(self.selected_layer)
+
+    def cache_figure(self, fig):
+        if not self.check_if_figure_is_cached():
+            key = self.get_figure_cache_key()
+            self.figure_cache[key] = fig
+
+    def get_cached_figure(self):
+        if self.check_if_figure_is_cached():
+            key = self.get_figure_cache_key()
+            fig = self.figure_cache[key]
+        else:
+            fig = None
+        return fig
+
+    def check_if_figure_is_cached(self):
+        key = self.get_figure_cache_key()
+        return key in self.figure_cache
+
+    def get_figure_cache_key(self):
+        return (self.subplot_rows, self.subplot_cols, self.visualization_mode_is_64x64)
 
     def get_side_to_move(self):
         return ['Black', 'White'][self.board.turn]
@@ -142,28 +170,14 @@ class GlobalData:
             rows = heads // 4 + int(heads % 4 != 0)
 
         if rows > max_rows_in_screen:
-            container_heigth = f'{int((rows / max_rows_in_screen)*100)}%'
+            container_height = f'{int((rows / max_rows_in_screen)*100)}%'
         else:
-            container_heigth = '100%'
+            container_height = '100%'
 
         cols = calc_cols(heads, rows)
         self.subplot_cols = cols
         self.subplot_rows = rows
-        self.figure_container_height = container_heigth
-
-
-        #if self.number_of_heads <= 8:
-        #    if self.number_of_heads > 4 and self.number_of_heads in (4, 8):
-        #        self.subplot_cols = min(self.number_of_heads, 4)
-        #    else:
-        #        self.subplot_cols = self.number_of_heads
-        #else:
-        #    self.subplot_cols = 8
-        #self.subplot_rows = self.number_of_heads // self.subplot_cols
-
-        #if self.number_of_heads == 12:
-        #    self.subplot_rows = 3#2
-        #    self.subplot_cols = 4#6
+        self.figure_container_height = container_height
 
     def update_selected_activation_data(self):
         #import numpy as np
@@ -198,7 +212,8 @@ class GlobalData:
         #TODO: figure out robust way to separate attention layers in body from the rest.
         heads = self.activations_data[0].shape[1]
         for ind, layer in enumerate(self.activations_data):
-            if layer.shape[1] != heads:
+            print(ind, layer.shape)
+            if layer.shape[1] != heads or len(layer.shape) != 4:
                 ind = ind - 1
                 break
         self.nr_of_layers_in_body = ind + 1

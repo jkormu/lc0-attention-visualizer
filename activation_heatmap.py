@@ -9,13 +9,15 @@ from server import app
 
 from utils import callback_triggered_by
 
+import time
+
 
 def heatmap_data(head):
     data = global_data.get_head_data(head)
     return data
 
 def heatmap_figure():
-    import time
+
     start = time.time()
     fig = make_figure()
     print('make fig:', time.time() - start)
@@ -24,18 +26,21 @@ def heatmap_figure():
     fig = add_heatmap_traces(fig)
     print('add traces:', time.time() - start)
 
+
     start = time.time()
     fig = add_layout(fig)
-    print('add layout:', time.time() - start)
+    print('add layout total:', time.time() - start)
 
     start = time.time()
     if not global_data.visualization_mode_is_64x64:
         fig = add_pieces(fig)
         print('add pieces:', time.time() - start)
+
     return fig
 
 
 def heatmap():
+    start = time.time()
     fig = heatmap_figure()
 
     graph_component = html.Div(id='graph-container', style={'height': '100%', 'width': '100%', "overflow": "auto"
@@ -53,33 +58,55 @@ def heatmap():
                   config=config
                   )]
 
+    global_data.cache_figure(fig)
+
+    print('GRAPH CREATION:', time.time() - start)
     return graph_component
 
 
 def make_figure():
-    titles = [f"Head {i + 1}" for i in range(global_data.number_of_heads)]
-    print('MAKING SUBPLOTS', 'rows:', global_data.subplot_rows, 'cols:', global_data.subplot_cols)
-    print('NUMBER OF HEADS:', global_data.number_of_heads)
-    fig = make_subplots(rows=global_data.subplot_rows, cols=global_data.subplot_cols, subplot_titles=titles,
-                        horizontal_spacing=0.1 / global_data.subplot_cols,
-                        vertical_spacing=0.25 / global_data.subplot_rows,
-                        )
+    print('assumed key', global_data.subplot_rows, global_data.subplot_rows, global_data.visualization_mode_is_64x64)
+    print('key', global_data.get_figure_cache_key())
+    print('all keys', global_data.figure_cache.keys())
+    fig = global_data.get_cached_figure()
+    if fig is None:
+        titles = [f"Head {i + 1}" for i in range(global_data.number_of_heads)]
+        print('MAKING SUBPLOTS', 'rows:', global_data.subplot_rows, 'cols:', global_data.subplot_cols)
+        print('NUMBER OF HEADS:', global_data.number_of_heads)
+        fig = make_subplots(rows=global_data.subplot_rows, cols=global_data.subplot_cols, subplot_titles=titles,
+                            horizontal_spacing=0.1 / global_data.subplot_cols,
+                            vertical_spacing=0.25 / global_data.subplot_rows,
+                            )
     return fig
 
 
 def add_layout(fig):
+    start = time.time()
+    if global_data.check_if_figure_is_cached():
+        print('Using existing layout')
+        return fig
+
     layout = go.Layout(
-        # title='Plot title goes here',
-        margin={'t': 30, 'b': 0, 'r': 0, 'l': 0},
-        plot_bgcolor='rgb(0,0,0)'
-    )
+            # title='Plot title goes here',
+            margin={'t': 30, 'b': 0, 'r': 0, 'l': 0},
+            plot_bgcolor='rgb(0,0,0)'
+        )
 
-    fig['layout'].update(layout)
+    fig.update_layout(layout)
+    #fig['layout'].update(layout)
 
+    print('update layout:', time.time() - start)
+
+    start = time.time()
+    fig = update_axis(fig)
+    print('update axis:', time.time() - start)
+    #print(fig)
+    return fig
+
+
+def update_axis(fig):
     if global_data.visualization_mode_is_64x64:
         tickvals = list(range(0, 64, 4))
-        ticktext_x = [str(i) for i in range(0, 64, 4)]
-        ticktext_y = [str(i) for i in range(0, 64, 4)]
         ticktext_x = [x + y for x, y in zip('ae' * 8, '1122334455667788')]
         ticktext_y = ticktext_x[::-1]
         showticklabels = True
@@ -127,9 +154,10 @@ def add_layout(fig):
 
 
 def add_heatmap_trace(fig, row, col):
-    print('ADDING heatmap', row, col)
+    #print('ADDING heatmap', row, col)
     head = (row - 1) * global_data.subplot_cols + (col - 1)
     data = heatmap_data(head)
+
     if data is None:
         return fig
 
@@ -153,6 +181,7 @@ def add_heatmap_trace(fig, row, col):
 
 
 def add_heatmap_traces(fig):
+    print('adding traces, rows:', global_data.subplot_rows, 'cols:', global_data.subplot_cols)
     for row in range(global_data.subplot_rows):
         for col in range(global_data.subplot_cols):
             fig = add_heatmap_trace(fig, row + 1, col + 1)
@@ -161,23 +190,30 @@ def add_heatmap_traces(fig):
 
 def add_pieces(fig):
     board_svg = get_svg_board(global_data.board, global_data.focused_square_ind, True)
-    fig.add_layout_image(
-        dict(
-            source=board_svg,
-            xref="x",
-            yref="y",
-            x=3.5,
-            y=3.5,
-            sizex=8,
-            sizey=8,
-            xanchor='center',
-            yanchor='middle',
-            sizing="stretch",
-        ),
-        row='all',
-        col='all',
-        exclude_empty_subplots=True,
-    )
+
+    if global_data.check_if_figure_is_cached():
+        print('USING CACHED')
+        for img in fig.layout.images:
+            img['source'] = board_svg
+    else:
+        fig.add_layout_image(
+            dict(
+                source=board_svg,
+                xref="x",
+                yref="y",
+                x=3.5,
+                y=3.5,
+                sizex=8,
+                sizey=8,
+                xanchor='center',
+                yanchor='middle',
+                sizing="stretch",
+            ),
+            row='all',
+            col='all',
+            exclude_empty_subplots=True,
+        )
+
     return fig
 
 

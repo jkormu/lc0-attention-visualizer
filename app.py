@@ -21,7 +21,7 @@ else:
     RIGHT_CONTAINER_BG = WHITE
     GRAPH_CONTAINER_BG = WHITE
     CONFIG_CONTAINER_BG = WHITE
-LEFT_PANE_WIDTH = 85
+LEFT_PANE_WIDTH = 90
 RIGHT_PANE_WIDTH = 100 - LEFT_PANE_WIDTH
 GRAPH_PANE_HEIGHT = 100
 
@@ -80,8 +80,11 @@ top_container = html.Div(children=[
 #    style={'height': '40%', 'width': '100%', 'backgroundColor': APP_CONTAINER_BG,
 #           'display': 'flex', 'flexDirection': 'row', 'alignItems:': 'flex-end', 'overflow': 'auto'})
 
+recalculate_graph = html.Div(id='recalculate-graph-indicator', hidden=True)
+
 layout = html.Div(children=[header_container,
                             top_container,
+                            recalculate_graph,
                             # bottom_container,
                             # left_container,
                             ],

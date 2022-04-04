@@ -5,9 +5,9 @@ from constants import ROOT_DIR
 from board2planes import board2planes
 
 #turn off tensorflow importing and gerenerate random data to speed up development
-SIMULATE_TF = False#True
-SIMULATED_LAYERS = 6
-SIMULATED_HEADS = 14
+SIMULATE_TF = False
+SIMULATED_LAYERS = None#6
+SIMULATED_HEADS = None#14
 FIXED_ROW = None #1 #None to disable
 FIXED_COL = None #5 #None to disable
 if SIMULATE_TF:
@@ -51,6 +51,9 @@ class GlobalData:
         self.number_of_heads = 8
         self.figure_container_height = '100%'#'100%'
 
+        self.running_counter = 0 #used to pass new values to hidden indicator elements which will trigger follow-up callback
+        self.grid_has_changed = False
+
         #self.has_subplot_grid_changed = True
         #self.figure_layout_images = None #store layout and only recalculate when subplot grid has changed
         #self.figure_layout_annotations = None
@@ -61,7 +64,8 @@ class GlobalData:
         self.update_grid_shape()
 
 
-        self.pgn_data = [] #list of boards
+        self.pgn_data = [] #list of boards in pgn
+        self.move_table_boards = {} #dict of boards in pgn, key is (move_table.row_ind, move_table.column_id)
 
         self.selected_layer = 0
         self.nr_of_layers_in_body = -1
@@ -77,6 +81,8 @@ class GlobalData:
         self.activations_data = None
         self.update_activations_data()
         self.set_layer(self.selected_layer)
+
+        self.move_table_active_cell = None
 
     def cache_figure(self, fig):
         if not self.check_if_figure_is_cached():
@@ -175,6 +181,10 @@ class GlobalData:
             container_height = '100%'
 
         cols = calc_cols(heads, rows)
+
+        if self.subplot_rows != rows or self.subplot_cols != cols:
+            self.grid_has_changed = True
+
         self.subplot_cols = cols
         self.subplot_rows = rows
         self.figure_container_height = container_height
@@ -242,6 +252,14 @@ class GlobalData:
     def set_fen(self, fen):
         self.board.set_fen(fen)
         self.fen = fen
+        self.update_activations_data()
+        self.update_selected_activation_data()
+
+    def set_board(self, board):
+        self.board = board
+        self.set_fen(board.fen())
+        self.update_activations_data()
+        self.update_selected_activation_data()
 
 global_data = GlobalData()
 print('global data created')

@@ -16,8 +16,8 @@ def heatmap_data(head):
     data = global_data.get_head_data(head)
     return data
 
-def heatmap_figure():
 
+def heatmap_figure():
     start = time.time()
     fig = make_figure()
     print('make fig:', time.time() - start)
@@ -25,7 +25,6 @@ def heatmap_figure():
     start = time.time()
     fig = add_heatmap_traces(fig)
     print('add traces:', time.time() - start)
-
 
     start = time.time()
     fig = add_layout(fig)
@@ -41,10 +40,18 @@ def heatmap_figure():
 
 def heatmap():
     start = time.time()
-    fig = heatmap_figure()
+    # We need to recalculate graph when grid size changes, other wise layout is a mess (Dash bug?). Use hidden Div's children to trigger callback for graph recalc.
+    # Otherwise we can just recalculate figure part and frontend rendering will be much faster
+    graph = html.Div(id='graph-container', children=[heatmap_graph()],
+                     style={'height': '100%', 'width': '100%', "overflow": "auto"
+                            })
 
-    graph_component = html.Div(id='graph-container', style={'height': '100%', 'width': '100%', "overflow": "auto"
-                                      })
+    print('GRAPH CREATION:', time.time() - start)
+    return graph
+
+
+def heatmap_graph():
+    fig = heatmap_figure()
 
     config = {
         'displaylogo': False,
@@ -52,16 +59,18 @@ def heatmap():
 
     style = {'height': global_data.figure_container_height, 'width': '100%'}
 
-    graph_component.children = [
-        dcc.Graph(figure=fig, id='graph', style=style,
-                  responsive=True,
-                  config=config
-                  )]
+    graph = dcc.Graph(figure=fig, id='graph', style=style,
+                      responsive=True,  # True,
+                      config=config
+                      )
+
+    # graph = html.Div(id='graph-container', children=[graph], style={'height': '100%', 'width': '100%', "overflow": "auto"
+    #                                                           })
+    # graph_component.children = [graph]
 
     global_data.cache_figure(fig)
 
-    print('GRAPH CREATION:', time.time() - start)
-    return graph_component
+    return graph
 
 
 def make_figure():
@@ -87,20 +96,20 @@ def add_layout(fig):
         return fig
 
     layout = go.Layout(
-            # title='Plot title goes here',
-            margin={'t': 30, 'b': 0, 'r': 0, 'l': 0},
-            plot_bgcolor='rgb(0,0,0)'
-        )
+        # title='Plot title goes here',
+        margin={'t': 30, 'b': 0, 'r': 0, 'l': 0},
+        plot_bgcolor='rgb(0,0,0)'
+    )
 
     fig.update_layout(layout)
-    #fig['layout'].update(layout)
+    # fig['layout'].update(layout)
 
     print('update layout:', time.time() - start)
 
     start = time.time()
     fig = update_axis(fig)
     print('update axis:', time.time() - start)
-    #print(fig)
+    # print(fig)
     return fig
 
 
@@ -154,7 +163,7 @@ def update_axis(fig):
 
 
 def add_heatmap_trace(fig, row, col):
-    #print('ADDING heatmap', row, col)
+    # print('ADDING heatmap', row, col)
     head = (row - 1) * global_data.subplot_cols + (col - 1)
     data = heatmap_data(head)
 
@@ -216,15 +225,83 @@ def add_pieces(fig):
 
     return fig
 
+#a = """
+# callback to update figure property of graph which in principle should be all we ever need to update (+graph height)
+# Due to probable dash/plotly bug this is not enough if figure's subplot grid dimensions change as updating only figure will result in messed up layout
+# To workaround this, we will update indicator component if grid dimension has changed, which in turn will trigger callback for full graph update
+@app.callback([Output('graph', 'figure'),
+               Output('recalculate-graph-indicator', 'children'),
+               Output('graph', 'style')],
+              [Input('graph', 'clickData'),
+               Input('mode-selector', 'value'),
+               Input('layer-selector', 'value'),
+               Input('selected-model', 'children'),  # New model was selected
+               Input('move-table', 'style_data_conditional'),  # New move was selected in move table
+               Input('fen-text', 'children')  # New fen was set
+               ])
+def update_heatmap_figure(click_data, mode, layer, *args):
+    fig = dash.no_update
+    trigger = callback_triggered_by()
+    global_data.set_visualization_mode(mode)
+    global_data.set_layer(layer)
+    print('MODE', mode)
+    if trigger == 'graph.clickData' and not click_data:
+        return dash.no_update, dash.no_update, dash.no_update  # , dash.no_update, dash.no_update
 
+    # if grid dimensions have change we need to trigger full graph component recalc (workaround for dash bug where
+    # figure layout is messed up if only figure is updated)
+    if global_data.grid_has_changed:
+        print('GRID CHANGED')
+        global_data.running_counter += 1
+        global_data.grid_has_changed = False
+        #Erase figure, update indicator with new value, hide graph until updated again
+        return {}, global_data.running_counter, {'visibility': 'hidden'}
+
+    if trigger == 'graph.clickData' and not global_data.visualization_mode_is_64x64:
+        point = click_data['points'][0]
+        x = point['x']
+        y = point['y']
+        square_ind = 8 * y + x
+        if square_ind != global_data.focused_square_ind:
+            global_data.focused_square_ind = square_ind
+            fig = heatmap_figure()
+            # container = dash.no_update
+
+    if trigger == 'fen-text.children':
+        fig = heatmap_figure()
+        # container = dash.no_update
+
+    if trigger in ('mode-selector.value', 'layer-selector.value', 'move-table.style_data_conditional'):
+        print('LAYER SELECTOR UPDATE')
+        fig = heatmap_figure()
+        # container = dash.no_update
+
+    if trigger == 'selected-model.children':
+        fig = heatmap_figure()  # dash.no_update#heatmap_figure()
+        # container = heatmap_graph()
+
+    return fig, dash.no_update, dash.no_update
+#"""
+
+@app.callback(Output('graph-container', 'children'),
+              Input('recalculate-graph-indicator', 'children'))
+def update_heatmap_graph(txt):
+    if txt is not None:
+        graph = heatmap_graph()
+    else:
+        graph = dash.no_update
+    return graph
+
+a = """ 
 @app.callback(Output('graph-container', 'children'),
               [Input('graph', 'clickData'),
                Input('mode-selector', 'value'),
                Input('layer-selector', 'value'),
-               Input('selected-model', 'children'),
-               Input('fen-text', 'children')
+               Input('selected-model', 'children'),  # New model was selected
+               Input('move-table', 'style_data_conditional'),  # New move was selected in move table
+               Input('fen-text', 'children')  # New fen was set
                ])
-def update_heatmaps(click_data, mode, layer, model, *args):
+def update_heatmaps(click_data, mode, layer, *args):
     graph = dash.no_update
     trigger = callback_triggered_by()
     global_data.set_visualization_mode(mode)
@@ -240,20 +317,20 @@ def update_heatmaps(click_data, mode, layer, model, *args):
         square_ind = 8 * y + x
         if square_ind != global_data.focused_square_ind:
             global_data.focused_square_ind = square_ind
-            graph = heatmap()
+            graph = heatmap_graph()
 
     if trigger == 'fen-text.children':
-        graph = heatmap()
+        graph = heatmap_graph()
 
-    if trigger in ('mode-selector.value', 'layer-selector.value'):
-        graph = heatmap()
+    if trigger in ('mode-selector.value', 'layer-selector.value', 'move-table.style_data_conditional'):
+        graph = heatmap_graph()
 
     if trigger == 'selected-model.children':
-        graph = heatmap()
+        graph = heatmap_graph()
 
     return graph
-
-a = """" 
+"""
+a = """ 
 @app.callback([Output('graph', 'figure'),
                Output('graph', 'style')],
               [Input('graph', 'clickData'),

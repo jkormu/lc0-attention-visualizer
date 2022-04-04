@@ -25,7 +25,21 @@ PGN_COMPONENT_STYLE = {
     'flexDirection': 'column',
 }
 
+#style to disable selected and active cell highlighting in datatable
+DEFAULT_STYLE_DATA_CONDITIONAL = [
+        {
+            "if": {"state": "active"},
+            "backgroundColor": "transparent",
+            "border": "none",
+        },
+        {
+            "if": {"state": "selected"},
+            "backgroundColor": "transparent",
+            "border": "none",
+        },
+    ]
 
+#SELECTED_CELL_COLOR = 'rgba(230,178,207,0.5) !important'
 
 
 
@@ -45,7 +59,7 @@ def parse_pgn(contents, filename, is_new_pgn):
 
     if is_new_pgn:
         board = first_game.board()
-        fen = board.fen()
+        #fen = board.fen()
         # game_data_pgn.board = board
         data = [deepcopy(board)]
         for move in first_game.mainline_moves():
@@ -53,6 +67,9 @@ def parse_pgn(contents, filename, is_new_pgn):
             data.append(deepcopy(board))
 
         global_data.pgn_data = data
+        global_data.set_board(data[0])
+
+        global_data.move_table_boards = {}
 
     game_info = f'**File**: {filename}\n'
     game_info += f'**White**: {first_game.headers.get("White", "?")}\n'
@@ -92,6 +109,7 @@ def parse_pgn(contents, filename, is_new_pgn):
 def update_pgn(content, filename):
     triggerers = dash.callback_context.triggered
     is_new_pgn = True
+    #TODO: Add position mode selector so below makes any sense
     for triggerer in triggerers:
         if triggerer['prop_id'] == 'position-mode-selector.value':
             is_new_pgn = False
@@ -105,16 +123,16 @@ def update_pgn(content, filename):
 
     return (info, table_data, hidden)
 
-def pgn_pane():
 
+def pgn_pane():
     container = html.Div(style={'height': '100%',
                                 'display': 'flex', 'flexDirection': 'column',
-        #       'position': 'relative',
-        # 'width': '100%',
-        # 'paddingBottom': FEN_PGN_COMPONENT_RELATIVE_HEIGHT,
-        #       'float': 'left',
-        #    'height': 0,
-    })
+                                #       'position': 'relative',
+                                # 'width': '100%',
+                                # 'paddingBottom': FEN_PGN_COMPONENT_RELATIVE_HEIGHT,
+                                #       'float': 'left',
+                                #    'height': 0,
+                                })
 
     # fen_component = html.Div(id='fen-component', style=FEN_COMPONENT_STYLE)
     # add_button = html.Button(id='add-fen',
@@ -169,6 +187,8 @@ def pgn_pane():
     container.children = [upload, pgn_info, move_table]
     return container
 
+
+
 def make_datatable():
     table = dash_table.DataTable(
         id='move-table',
@@ -181,24 +201,107 @@ def make_datatable():
             {"name": '', "id": 'dummy_right'}
         ],
         style_data={'border': 'none'},
-        #style_table={'width': '100%', 'marginLeft': '0px', 'overflowY': 'auto', },
+        # style_table={'width': '100%', 'marginLeft': '0px', 'overflowY': 'auto', },
         style_table={'width': '100%', 'marginLeft': '0px', 'overflowY': 'auto',
                      },
         style_header={
-            #'backgroundColor': 'rgb(230, 230, 230)',
+            # 'backgroundColor': 'rgb(230, 230, 230)',
             'fontWeight': 'bold',
             'border': 'none'
         },
         css=[{"selector": "table", "rule": "width: 100%;"},
              {"selector": ".dash-spreadsheet.dash-freeze-top, .dash-spreadsheet .dash-virtualized",
               "rule": "max-height: none;"}],
+        style_data_conditional=DEFAULT_STYLE_DATA_CONDITIONAL,
+        # cell_selectable=False,
+        active_cell={'row': 0, 'column': 2, 'column_id': 'White'}
     )
 
-    container = html.Div(id='table-container', children=html.Div(children=table, style={'borderLeft': f'1px solid grey', 'borderTop': f'1px solid grey'}),
-    style={'flex': '1', 'overflow': 'auto', },
+    container = html.Div(id='table-container', children=html.Div(children=table, style={'borderLeft': f'1px solid grey',
+                                                                                        'borderTop': f'1px solid grey'}),
+                         style={'flex': '1', 'overflow': 'auto', },
                          hidden=True)
 
     return container
+
+
+# app.clientside_callback(
+#    """
+#    function(active_cell) {
+#        return {'row': 4, 'column': 2, 'column_id': 'White'};
+#    }
+#    """,
+#    Output('move-table', 'active_cell'),
+#    Input('move-table', 'active_cell'),
+#    #Input('in-component2', 'value')
+# )
+
+#a = """
+@app.callback(
+    Output('move-table', 'style_data_conditional'),
+    #Output('move-table', 'selected_cells')],
+    #[
+      #  Output('move-table', 'selected_cells'),
+    #Output('move-table', 'active_cell'),
+    #],
+    [Input('move-table', 'active_cell'), ])
+def cell_highlight(active_cell):
+    #style_data_conditional = []
+    #disable_selected = {
+    #        "if": {"state": "active"},
+    #        #"backgroundColor": "transparent !important",
+    #        "backgroundColor": "transparent",
+    #        #"border": "transparent !important",
+    #    }
+
+
+
+    if active_cell is None:
+        return dash.no_update#, []#[], dash.no_update
+
+    print('ACTIVE:', active_cell)
+
+    row_ind = active_cell['row']
+    col_id = active_cell['column_id']
+
+    if col_id in ('Move', 'dummy_left', 'dummy_right'):
+        return dash.no_update
+
+    cell_highlight = {
+            "if": {'row_index': row_ind, 'column_id': col_id},
+            "font-weight": "bold",
+            "color": "red",
+        }
+    style_data_conditional = [cell_highlight] + DEFAULT_STYLE_DATA_CONDITIONAL
+
+    if global_data.move_table_boards != {}:
+        board = global_data.move_table_boards[(row_ind, col_id)]
+        global_data.set_board(board)
+        print(board)
+
+    #col_ind = active_cell['column']
+    #col_id = active_cell['column_id']
+    #print('selected', row_ind, col_ind, col_id)
+    #if col_id in ('Move', 'dummy_left', 'dummy_right'):  # cells in move number column are not selectable
+    #    print('returning previously  selected')
+    #    row_ind = global_data.move_table_active_cell['row']
+    #    col_id = global_data.move_table_active_cell['column_id']
+    #    #return [], global_data.move_table_active_cell
+    #else:
+    #    global_data.move_table_active_cell = active_cell
+
+    #highlight = {
+    #    'if': {'column_id': col_id},#'row_index': row_ind,
+    #    'backgroundColor': 'blue !important'
+    #}
+
+    #style_data_conditional.append(highlight)
+    #style_data_conditional.append(disable_selected)
+    print(style_data_conditional)
+
+    return style_data_conditional#, []#[], dash.no_update#style_data_conditional
+#"""
+
 
 def get_last_move_as_san(board):
     move = board.pop()
@@ -207,29 +310,39 @@ def get_last_move_as_san(board):
 
     return san
 
+
 def get_datatable_data():
     if not global_data.pgn_data:
         return []
     data = []
-    row = None#{'White': '', 'Black': ''}
+    row = None  # {'White': '', 'Black': ''}
+    row_ind = 0
     moven_nr = 0
+    boards_in_table = {}
+    #TODO: make it work with pgns starting from black move
     for board in global_data.pgn_data:
         if not board.turn:
             if row:
                 data.append(row)
+                row_ind += 1
             moven_nr += 1
             row = {'Move': moven_nr, 'White': '', 'Black': ''}
         if board.move_stack:
-            print('----------')
-            print(board)
-            print(board.move_stack[-1])
-            move = get_last_move_as_san(board)#board.san(board.move_stack[-1])
-            print(move)
-        #else:
-        #    move = '*'
-            row[('White', 'Black')[board.turn]] = move
+            # print('----------')
+            # print(board)
+            # print(board.move_stack[-1])
+            move = get_last_move_as_san(board)  # board.san(board.move_stack[-1])
+            # print(move)
+            # else:
+            #    move = '*'
+            col_id = ('White', 'Black')[board.turn]
+            row[col_id] = move
+            boards_in_table[(row_ind, col_id)] = board
         else:
             data.append({'Move': moven_nr, 'White': '-', 'Black': '-'})
+            boards_in_table[(row_ind, 'White')] = board
+            boards_in_table[(row_ind, 'Black')] = board
+            row_ind += 1
 
     #    if moven_nr == 0:
     #        row = {'Move': moven_nr, 'White': '*', 'Black': '*'}
@@ -247,19 +360,20 @@ def get_datatable_data():
     #        move = '*'
     #    row[('White', 'Black')[board.turn]] = move
 
-        #if board.turn:
-        #    if row: #!= {'White': '', 'Black': ''}:
-        #        data.append(row)
-        #        moven_nr += 1
-        #        #is_first_row = False
-        #        row = {'Move': moven_nr, 'White': '', 'Black': ''}
-        #    else:
-        #        row = {'Move': moven_nr, 'White': '*', 'Black': '*'}
-        #if board.move_stack:
-        #    move = board.move_stack[-1].__str__()
-        #else:
-        #    move = '*'
-        #row[('White', 'Black')[board.turn]] = move
+    # if board.turn:
+    #    if row: #!= {'White': '', 'Black': ''}:
+    #        data.append(row)
+    #        moven_nr += 1
+    #        #is_first_row = False
+    #        row = {'Move': moven_nr, 'White': '', 'Black': ''}
+    #    else:
+    #        row = {'Move': moven_nr, 'White': '*', 'Black': '*'}
+    # if board.move_stack:
+    #    move = board.move_stack[-1].__str__()
+    # else:
+    #    move = '*'
+    # row[('White', 'Black')[board.turn]] = move
+    global_data.move_table_boards = boards_in_table
     data.append(row)
     return data
 

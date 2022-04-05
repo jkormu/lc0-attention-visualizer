@@ -220,7 +220,9 @@ def make_datatable():
 @app.callback(
     [Output('pgn-info', 'children'),
      Output('move-table', 'data'),
-     Output('table-container', 'hidden')],
+     Output('table-container', 'hidden'),
+     Output('move-table', 'active_cell'),
+     ],
     [Input('upload-pgn', 'contents'),
      ],
     [State('upload-pgn', 'filename')]
@@ -239,8 +241,8 @@ def update_pgn(content, filename):
     table_data = get_datatable_data()
 
     hidden = global_data.pgn_data == []
-
-    return (info, table_data, hidden)
+    active_cell = {'row': 0, 'column': 2, 'column_id': 'White'}
+    return (info, table_data, hidden, active_cell)
 
 @app.callback(
     Output('board-img', 'src'),
@@ -271,7 +273,7 @@ def cell_highlight(active_cell):
     if active_cell is None:
         return dash.no_update#, []#[], dash.no_update
 
-    #print('ACTIVE:', active_cell)
+    print('ACTIVE:', active_cell)
 
     row_ind = active_cell['row']
     col_id = active_cell['column_id']

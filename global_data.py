@@ -5,9 +5,9 @@ from constants import ROOT_DIR
 from board2planes import board2planes
 
 #turn off tensorflow importing and gerenerate random data to speed up development
-SIMULATE_TF = False
-SIMULATED_LAYERS = None#6
-SIMULATED_HEADS = None#14
+SIMULATE_TF = True
+SIMULATED_LAYERS = 6
+SIMULATED_HEADS = 8
 FIXED_ROW = None #1 #None to disable
 FIXED_COL = None #5 #None to disable
 if SIMULATE_TF:
@@ -257,7 +257,8 @@ class GlobalData:
 
     def set_board(self, board):
         self.board = board
-        self.set_fen(board.fen())
+        self.fen = board.fen()
+        #self.set_fen(board.fen())
         self.update_activations_data()
         self.update_selected_activation_data()
 

@@ -1,6 +1,7 @@
 import dash
 from copy import deepcopy
 from global_data import global_data
+from svg_pieces import get_svg_board
 
 from dash import dcc, html, Input, Output, State
 
@@ -11,6 +12,7 @@ import base64
 import io
 
 from dash import dash_table
+
 
 PGN_COMPONENT_STYLE = {
     'height': '5em',  # '100%',
@@ -65,6 +67,7 @@ def parse_pgn(contents, filename, is_new_pgn):
         for move in first_game.mainline_moves():
             board.push(move)
             data.append(deepcopy(board))
+            #print('MOVE STACK LEN', len(board.move_stack))
 
         global_data.pgn_data = data
         global_data.set_board(data[0])
@@ -98,33 +101,8 @@ def parse_pgn(contents, filename, is_new_pgn):
 #    table = make_table()
 #    return (info, table)
 
-@app.callback(
-    [Output('pgn-info', 'children'),
-     Output('move-table', 'data'),
-     Output('table-container', 'hidden')],
-    [Input('upload-pgn', 'contents'),
-     ],
-    [State('upload-pgn', 'filename')]
-)
-def update_pgn(content, filename):
-    triggerers = dash.callback_context.triggered
-    is_new_pgn = True
-    #TODO: Add position mode selector so below makes any sense
-    for triggerer in triggerers:
-        if triggerer['prop_id'] == 'position-mode-selector.value':
-            is_new_pgn = False
-            break
-    # if position_mode == 'fen':
-    #    return ''
-    info = parse_pgn(content, filename, is_new_pgn)
-    table_data = get_datatable_data()
 
-    hidden = global_data.pgn_data == []
-
-    return (info, table_data, hidden)
-
-
-def pgn_pane():
+def position_pane():
     container = html.Div(style={'height': '100%',
                                 'display': 'flex', 'flexDirection': 'column',
                                 #       'position': 'relative',
@@ -180,11 +158,12 @@ def pgn_pane():
 
     move_table = make_datatable()
 
+    img = html.Img(id='board-img', src=get_svg_board(global_data.board, None, False))
     # fen_added_indicator = html.Div(id='fen-added', style={'display': 'none'})
     # fen_deleted_indicator = html.Div(id='data-deleted-indicator', style={'display': 'none'})
     # fen_component.children = [add_buttons, fen_input, click_mode, fen_added_indicator, fen_deleted_indicator]
     # fen_pgn_container.children = [fen_component, upload]
-    container.children = [upload, pgn_info, move_table]
+    container.children = [upload, img,pgn_info, move_table]
     return container
 
 
@@ -237,6 +216,39 @@ def make_datatable():
 # )
 
 #a = """
+
+@app.callback(
+    [Output('pgn-info', 'children'),
+     Output('move-table', 'data'),
+     Output('table-container', 'hidden')],
+    [Input('upload-pgn', 'contents'),
+     ],
+    [State('upload-pgn', 'filename')]
+)
+def update_pgn(content, filename):
+    triggerers = dash.callback_context.triggered
+    is_new_pgn = True
+    #TODO: Add position mode selector so below makes any sense
+    for triggerer in triggerers:
+        if triggerer['prop_id'] == 'position-mode-selector.value':
+            is_new_pgn = False
+            break
+    # if position_mode == 'fen':
+    #    return ''
+    info = parse_pgn(content, filename, is_new_pgn)
+    table_data = get_datatable_data()
+
+    hidden = global_data.pgn_data == []
+
+    return (info, table_data, hidden)
+
+@app.callback(
+    Output('board-img', 'src'),
+    [Input('fen-text', 'children'),
+    Input('move-table', 'style_data_conditional')])
+def update_board_image(*args):
+    return get_svg_board(global_data.board, None, False)
+
 @app.callback(
     Output('move-table', 'style_data_conditional'),
     #Output('move-table', 'selected_cells')],
@@ -259,7 +271,7 @@ def cell_highlight(active_cell):
     if active_cell is None:
         return dash.no_update#, []#[], dash.no_update
 
-    print('ACTIVE:', active_cell)
+    #print('ACTIVE:', active_cell)
 
     row_ind = active_cell['row']
     col_id = active_cell['column_id']
@@ -277,7 +289,7 @@ def cell_highlight(active_cell):
     if global_data.move_table_boards != {}:
         board = global_data.move_table_boards[(row_ind, col_id)]
         global_data.set_board(board)
-        print(board)
+        #print(board)
 
     #col_ind = active_cell['column']
     #col_id = active_cell['column_id']

@@ -35,6 +35,9 @@ def heatmap_figure():
         fig = add_pieces(fig)
         print('add pieces:', time.time() - start)
 
+    with open(f'sqr_{global_data.focused_square_ind}_fig_{global_data.running_counter}.txt', "w") as f:
+        f.write(fig.__str__())
+        global_data.running_counter += 1
     return fig
 
 
@@ -60,7 +63,7 @@ def heatmap_graph():
     style = {'height': global_data.figure_container_height, 'width': '100%'}
 
     graph = dcc.Graph(figure=fig, id='graph', style=style,
-                      responsive=True,  # True,
+                      responsive='auto',#True,  # True,
                       config=config
                       )
 
@@ -191,6 +194,8 @@ def add_heatmap_trace(fig, row, col):
 
 def add_heatmap_traces(fig):
     print('adding traces, rows:', global_data.subplot_rows, 'cols:', global_data.subplot_cols)
+    #adding traces is quick so we don't bother using cached values. Wipe old traces and add new.
+    fig.data = []
     for row in range(global_data.subplot_rows):
         for col in range(global_data.subplot_cols):
             fig = add_heatmap_trace(fig, row + 1, col + 1)
@@ -226,7 +231,7 @@ def add_pieces(fig):
     return fig
 
 #a = """
-# callback to update figure property of graph which in principle should be all we ever need to update (+graph height)
+# callback to update figure property of graph. In principle, this should be all we ever need to update (+graph height)
 # Due to probable dash/plotly bug this is not enough if figure's subplot grid dimensions change as updating only figure will result in messed up layout
 # To workaround this, we will update indicator component if grid dimension has changed, which in turn will trigger callback for full graph update
 @app.callback([Output('graph', 'figure'),
@@ -237,6 +242,7 @@ def add_pieces(fig):
                Input('layer-selector', 'value'),
                Input('selected-model', 'children'),  # New model was selected
                Input('move-table', 'style_data_conditional'),  # New move was selected in move table
+               Input('position-mode-changed-indicator', 'children'), # fen/pgn mode changed
                Input('fen-text', 'children')  # New fen was set
                ])
 def update_heatmap_figure(click_data, mode, layer, *args):
@@ -271,8 +277,8 @@ def update_heatmap_figure(click_data, mode, layer, *args):
         fig = heatmap_figure()
         # container = dash.no_update
 
-    if trigger in ('mode-selector.value', 'layer-selector.value', 'move-table.style_data_conditional'):
-        print('LAYER SELECTOR UPDATE')
+    if trigger in ('mode-selector.value', 'layer-selector.value', 'move-table.style_data_conditional', 'position-mode-changed-indicator.children'):
+        #print('LAYER SELECTOR UPDATE')
         fig = heatmap_figure()
         # container = dash.no_update
 

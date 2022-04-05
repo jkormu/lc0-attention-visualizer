@@ -13,7 +13,9 @@ import io
 
 from dash import dash_table
 
+from fen_input import fen_component
 
+FEN_PGN_COMPONENT_RELATIVE_HEIGHT = '40%'
 PGN_COMPONENT_STYLE = {
     'height': '5em',  # '100%',
     # 'width': '100%',
@@ -25,6 +27,7 @@ PGN_COMPONENT_STYLE = {
     # 'left': 0,
     'display': 'flex',
     'flexDirection': 'column',
+    #"visibility": "hidden"
 }
 
 #style to disable selected and active cell highlighting in datatable
@@ -136,6 +139,28 @@ def position_pane():
     # add_buttons = html.Div(children=[add_button, add_startpos],
     #                       style={'display': 'flex'})
     #
+
+    mode_selector = html.Div(children=[dcc.RadioItems(id='position-mode-selector',
+                                                      options=[{'label': 'pgn', 'value': 'pgn'},
+                                                               {'label': 'fen', 'value': 'fen'},
+                                                               ],
+                                                      value='fen')],
+                             style={'marginBottom': '3px'})
+
+    mode_changed_indicator = html.Div(id='position-mode-changed-indicator', hidden=True)
+
+    fen_pgn_container = html.Div(style={
+        'position': 'relative',
+        'width': '100%',
+        #'paddingBottom': FEN_PGN_COMPONENT_RELATIVE_HEIGHT,
+        'float': 'left',
+        'marginBottom': '5px',
+    #    'height': 0,
+    },)
+
+
+    fen_input = fen_component()
+
     upload = dcc.Upload(
         id='upload-pgn',
         children=[html.Div(style={'flex': 1}),
@@ -149,12 +174,15 @@ def position_pane():
                            ),
                   ],
         style=PGN_COMPONENT_STYLE,
+        className='hidden-but-reserve-space',
         # Only one pgn allowed
         multiple=False
     )
     pgn_info = html.Div(id='pgn-info',
                         style={'height': '5em'},
                         hidden=True)
+
+    fen_pgn_container.children = [fen_input, upload]
 
     move_table = make_datatable()
 
@@ -163,7 +191,8 @@ def position_pane():
     # fen_deleted_indicator = html.Div(id='data-deleted-indicator', style={'display': 'none'})
     # fen_component.children = [add_buttons, fen_input, click_mode, fen_added_indicator, fen_deleted_indicator]
     # fen_pgn_container.children = [fen_component, upload]
-    container.children = [upload, img,pgn_info, move_table]
+
+    container.children = [mode_selector, mode_changed_indicator, fen_pgn_container, img, pgn_info, move_table]
     return container
 
 
@@ -218,6 +247,35 @@ def make_datatable():
 #a = """
 
 @app.callback(
+    [Output('fen-component', 'className'),
+     Output('upload-pgn', 'className'),
+     Output('table-container', 'className'),
+     Output('position-mode-changed-indicator', 'children')
+     ],
+    Input('position-mode-selector', 'value')
+)
+def set_position_mode(mode):
+    if mode is None:
+        return dash.no_update, dash.no_update
+
+
+    hidden = 'hidden-but-reserve-space'
+    visible = ''
+    global_data.running_counter += 1
+    if mode == 'fen':
+        global_data.board.set_fen(global_data.fen)
+        global_data.update_activations_data()
+        global_data.update_selected_activation_data()
+        return visible, hidden, 'completely-hidden', global_data.running_counter
+    if mode == 'pgn':
+        if global_data.move_table_boards != {}:
+            board = global_data.move_table_boards[global_data.active_move_table_cell]
+            global_data.set_board(board)
+            global_data.update_activations_data()
+            global_data.update_selected_activation_data()
+        return hidden, visible, '', global_data.running_counter
+
+@app.callback(
     [Output('pgn-info', 'children'),
      Output('move-table', 'data'),
      Output('table-container', 'hidden'),
@@ -247,7 +305,8 @@ def update_pgn(content, filename):
 @app.callback(
     Output('board-img', 'src'),
     [Input('fen-text', 'children'),
-    Input('move-table', 'style_data_conditional')])
+    Input('move-table', 'style_data_conditional'),
+     Input('position-mode-changed-indicator', 'children')])
 def update_board_image(*args):
     return get_svg_board(global_data.board, None, False)
 
@@ -280,6 +339,8 @@ def cell_highlight(active_cell):
 
     if col_id in ('Move', 'dummy_left', 'dummy_right'):
         return dash.no_update
+
+    global_data.active_move_table_cell = (row_ind, col_id)
 
     cell_highlight = {
             "if": {'row_index': row_ind, 'column_id': col_id},

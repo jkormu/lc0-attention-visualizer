@@ -1,3 +1,10 @@
+.completely-hidden{
+    display: none;
+}
+
+.hidden-but-reserve-space{
+    visibility: hidden;
+}
 
 .header-container {
     border-bottom: thin lightgrey solid;

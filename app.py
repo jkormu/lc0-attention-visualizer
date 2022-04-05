@@ -55,7 +55,7 @@ right_container = html.Div(
 right_container.children = [position_pane()]
 
 header_container = html.Div(children=[
-    fen_component(),
+    #fen_component(),
     mode_selector(),
     layer_selector(),
     model_selector(),

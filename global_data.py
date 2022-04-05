@@ -2,6 +2,8 @@ import chess.engine
 from constants import ROOT_DIR
 #from test_array import activations_array
 
+from copy import deepcopy
+
 from board2planes import board2planes
 
 #turn off tensorflow importing and gerenerate random data to speed up development
@@ -41,6 +43,7 @@ class GlobalData:
         self.fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'#'2kr3r/ppp2b2/2n4p/4p3/Q2Pq1pP/2P1N3/PP3PP1/R1B1KB1R w KQ - 3 18'#'6n1/1p1k4/3p4/pNp5/P1P4p/7P/1P4KP/r7 w - - 2 121'#
         self.board = chess.Board(fen=self.fen)
         self.focused_square_ind = 0
+        self.active_move_table_cell = None #tuple (row_ind, col_id), e.g. (12, 'White')
 
         self.activations = None#activations_array
         self.visualization_mode = 'ROW'
@@ -256,8 +259,8 @@ class GlobalData:
         self.update_selected_activation_data()
 
     def set_board(self, board):
-        self.board = board
-        self.fen = board.fen()
+        self.board = deepcopy(board)
+        #self.fen = board.fen()
         #self.set_fen(board.fen())
         self.update_activations_data()
         self.update_selected_activation_data()

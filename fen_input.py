@@ -3,26 +3,37 @@ from global_data import global_data
 import dash
 from server import app
 
+#FEN_COMPONENT_STYLE = {'position': 'absolute', 'left': 0, 'height': '100%', 'width': '97%'}
 
 def fen_component():
     fen_component = html.Div(id='fen-component',
-                             style={'display': 'flex', 'flexDirection': 'column'},
-                             className='header-control-container',
+                             style={'position': 'absolute', 'left': 0,
+                                    'display': 'flex', 'flexDirection': 'column',
+                                    'width': '100%'},
+                             #className='header-control-container',
                              # style=FEN_COMPONENT_STYLE,
                              )
     add_button = html.Button(id='add-fen',
-                             children=['Set'],
-                             style={'marginRight': '5px', 'marginBottom': '3px'})
-    fen_input = dcc.Input(id='fen-input',
-                          type='text',
-                          size="75",
-                          autoComplete="off",
+                             children=['Set fen'],
+                             style={#'marginRight': '5px',
+                                    'marginBottom': '3px',
+                                    'width':'100%',
+                                    'box-sizing': 'border-box'})
+    fen_input = dcc.Textarea(id='fen-input',
+                          #type='text',
+                          #size="75",
+                          #autoComplete="off",
                           style={#'fontSize': '12px',
-                                 # 'width': '100%',
+                                'width': '100%',
+                                'height': '50px',
+                                'box-sizing': 'border-box',
+                                #'border': 'none',
                                  },
                           placeholder=global_data.board.fen(),
                           # style={'flex': 1},
                           )
+
+
 
     add_startpos = html.Button(id='add-startpos',
                                children=['Start position'],
@@ -42,10 +53,12 @@ def fen_component():
                                'fontSize': '15px',
                                'textAlign': 'center'},
                         children=global_data.fen)
-    label = html.Label(html.B('Fen'), className='header-label')
-    side_to_move = html.Label(children=['Side to move: ', html.B(global_data.get_side_to_move())], id='side-to-move')
-    fen_feedback = html.B('Invalid FEN', id='fen-feedback', style={'color': 'red'}, hidden=True)
-    fen_component.children = [label,
+    #label = html.Label(html.B('Fen'), className='header-label')
+    side_to_move = html.Label(children=['Side to move: ', html.B(global_data.get_side_to_move())], id='side-to-move', hidden=True)
+    fen_feedback = html.B('Invalid FEN', id='fen-feedback', style={'color': 'red'}, className='hidden-but-reserve-space'
+                          #hidden=True,
+                          )
+    fen_component.children = [#label,
                               # fen_input,
                               add_buttons,
                               fen_text,
@@ -60,7 +73,7 @@ def fen_component():
                Output('fen-input', 'placeholder'),
                Output('fen-text', 'children'),
                Output('side-to-move', 'children'),
-               Output('fen-feedback', 'hidden')
+               Output('fen-feedback', 'className')
                ],
               [Input('add-fen', 'n_clicks'),
                Input('add-startpos', 'n_clicks')],
@@ -90,8 +103,8 @@ def add_fen(n_clicks_fen, n_clicks_startpos, fen):
     try:
         global_data.set_fen(fen)
     except ValueError:
-        return ('', dash.no_update, dash.no_update, dash.no_update, False) #'not valid fen'
+        return ('', dash.no_update, dash.no_update, dash.no_update, '') #'not valid fen'
 
     print('setting fen')
     global_data.update_selected_activation_data()
-    return ('', fen, fen, ['Side to move: ', html.B(global_data.get_side_to_move())], True)
+    return ('', fen, fen, ['Side to move: ', html.B(global_data.get_side_to_move())], 'hidden-but-reserve-space')

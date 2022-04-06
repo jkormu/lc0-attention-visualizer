@@ -15,6 +15,8 @@ from dash import dash_table
 
 from fen_input import fen_component
 
+from utils import callback_triggered_by
+
 FEN_PGN_COMPONENT_RELATIVE_HEIGHT = '40%'
 PGN_COMPONENT_STYLE = {
     'height': '5em',  # '100%',
@@ -178,21 +180,28 @@ def position_pane():
         # Only one pgn allowed
         multiple=False
     )
+
+    img = html.Img(id='board-img', src=get_svg_board(global_data.board, None, False))
+
     pgn_info = html.Div(id='pgn-info',
                         style={'height': '5em'},
                         hidden=True)
 
     fen_pgn_container.children = [fen_input, upload]
 
+    next_button = html.Button(id='next-move-button', children='\u25BA', style={'flex': '1', 'width': '50%'})
+    previous_button = html.Button(id='previous-move-button', children='\u25C4', style={'flex': '1', 'width': '50%'})
+
+    buttons = html.Div(id='move-selection-buttons', children=[previous_button, next_button], style={'width': '100%', 'marginTop': '5px'}, className='hidden-but-reserve-space', hidden=True)
+
     move_table = make_datatable()
 
-    img = html.Img(id='board-img', src=get_svg_board(global_data.board, None, False))
     # fen_added_indicator = html.Div(id='fen-added', style={'display': 'none'})
     # fen_deleted_indicator = html.Div(id='data-deleted-indicator', style={'display': 'none'})
     # fen_component.children = [add_buttons, fen_input, click_mode, fen_added_indicator, fen_deleted_indicator]
     # fen_pgn_container.children = [fen_component, upload]
 
-    container.children = [mode_selector, mode_changed_indicator, fen_pgn_container, img, pgn_info, move_table]
+    container.children = [mode_selector, mode_changed_indicator, fen_pgn_container, img, pgn_info, buttons, move_table]
     return container
 
 
@@ -225,10 +234,19 @@ def make_datatable():
         active_cell={'row': 0, 'column': 2, 'column_id': 'White'}
     )
 
-    container = html.Div(id='table-container', children=html.Div(children=table, style={'borderLeft': f'1px solid grey',
-                                                                                        'borderTop': f'1px solid grey'}),
+    #next_button = html.Button(id='next-move-button', children='->', style={'flex': '1'})
+    #previous_button = html.Button(id='previous-move-button', children='<-', style={'flex': '1'})
+
+    #buttons = html.Div(children=[previous_button, next_button], style={'width': '75%', 'display': 'flex'})
+
+    container = html.Div(id='table-container', children=[
+                                                         html.Div(children=table, style={'borderLeft': f'1px solid grey',
+                                                                                        'borderTop': f'1px solid grey'})],
                          style={'flex': '1', 'overflow': 'auto', },
                          hidden=True)
+
+    #container_outer = html.Div(children=[buttons, container],
+    #                           style={'display': 'flex', 'flexDirection': 'column', 'height': '100%'}) #{'display': 'flex', 'flexDirection': 'row', 'flex': '0'}
 
     return container
 
@@ -250,13 +268,14 @@ def make_datatable():
     [Output('fen-component', 'className'),
      Output('upload-pgn', 'className'),
      Output('table-container', 'className'),
+     Output('move-selection-buttons', 'className'),
      Output('position-mode-changed-indicator', 'children')
      ],
     Input('position-mode-selector', 'value')
 )
 def set_position_mode(mode):
     if mode is None:
-        return dash.no_update, dash.no_update
+        return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 
     hidden = 'hidden-but-reserve-space'
@@ -266,19 +285,20 @@ def set_position_mode(mode):
         global_data.board.set_fen(global_data.fen)
         global_data.update_activations_data()
         global_data.update_selected_activation_data()
-        return visible, hidden, 'completely-hidden', global_data.running_counter
+        return visible, hidden, 'completely-hidden', 'completely-hidden', global_data.running_counter
     if mode == 'pgn':
         if global_data.move_table_boards != {}:
             board = global_data.move_table_boards[global_data.active_move_table_cell]
             global_data.set_board(board)
             global_data.update_activations_data()
             global_data.update_selected_activation_data()
-        return hidden, visible, '', global_data.running_counter
+        return hidden, visible, '', '', global_data.running_counter
 
 @app.callback(
     [Output('pgn-info', 'children'),
      Output('move-table', 'data'),
-     Output('table-container', 'hidden'),
+     Output('table-container', 'hidden'), #TODO: wrap table-container and buttons to same container and hide/unhide it
+     Output('move-selection-buttons', 'hidden'),
      Output('move-table', 'active_cell'),
      ],
     [Input('upload-pgn', 'contents'),
@@ -299,8 +319,9 @@ def update_pgn(content, filename):
     table_data = get_datatable_data()
 
     hidden = global_data.pgn_data == []
+    print('VALUE OF HIDDEN', hidden)
     active_cell = {'row': 0, 'column': 2, 'column_id': 'White'}
-    return (info, table_data, hidden, active_cell)
+    return info, table_data, hidden, hidden, active_cell
 
 @app.callback(
     Output('board-img', 'src'),
@@ -317,8 +338,10 @@ def update_board_image(*args):
       #  Output('move-table', 'selected_cells'),
     #Output('move-table', 'active_cell'),
     #],
-    [Input('move-table', 'active_cell'), ])
-def cell_highlight(active_cell):
+    [Input('move-table', 'active_cell'),
+     Input('next-move-button', 'n_clicks'),
+     Input('previous-move-button', 'n_clicks')])
+def cell_highlight(active_cell, *args):
     #style_data_conditional = []
     #disable_selected = {
     #        "if": {"state": "active"},
@@ -332,13 +355,35 @@ def cell_highlight(active_cell):
     if active_cell is None:
         return dash.no_update#, []#[], dash.no_update
 
-    print('ACTIVE:', active_cell)
+    triggerer = callback_triggered_by()
 
-    row_ind = active_cell['row']
-    col_id = active_cell['column_id']
+    if triggerer == 'move-table.active_cell':
+        print('ACTIVE:', active_cell)
 
-    if col_id in ('Move', 'dummy_left', 'dummy_right'):
-        return dash.no_update
+        row_ind = active_cell['row']
+        col_id = active_cell['column_id']
+
+        if col_id in ('Move', 'dummy_left', 'dummy_right'):
+            return dash.no_update
+    else:
+        current_row_ind = global_data.active_move_table_cell[0]
+        current_col_id = global_data.active_move_table_cell[1]
+        if triggerer == 'next-move-button.n_clicks':
+            if current_col_id == 'White':
+                row_ind = current_row_ind
+                col_id = 'Black'
+            else:
+                row_ind = current_row_ind + 1
+                col_id = 'White'
+        else:
+            if current_col_id == 'White':
+                row_ind = current_row_ind - 1
+                col_id = 'Black'
+            else:
+                row_ind = current_row_ind
+                col_id = 'White'
+        if (row_ind, col_id) not in global_data.move_table_boards:
+            return dash.no_update
 
     global_data.active_move_table_cell = (row_ind, col_id)
 
@@ -401,7 +446,7 @@ def get_datatable_data():
                 data.append(row)
                 row_ind += 1
             moven_nr += 1
-            row = {'Move': moven_nr, 'White': '', 'Black': ''}
+            row = {'Move': f'{moven_nr}.', 'White': '', 'Black': ''}
         if board.move_stack:
             # print('----------')
             # print(board)
@@ -414,7 +459,7 @@ def get_datatable_data():
             row[col_id] = move
             boards_in_table[(row_ind, col_id)] = board
         else:
-            data.append({'Move': moven_nr, 'White': '-', 'Black': '-'})
+            data.append({'Move': f'{moven_nr}.', 'White': '-', 'Black': '-'})
             boards_in_table[(row_ind, 'White')] = board
             boards_in_table[(row_ind, 'Black')] = board
             row_ind += 1

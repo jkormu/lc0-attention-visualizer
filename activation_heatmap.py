@@ -35,9 +35,9 @@ def heatmap_figure():
         fig = add_pieces(fig)
         print('add pieces:', time.time() - start)
 
-    with open(f'sqr_{global_data.focused_square_ind}_fig_{global_data.running_counter}.txt', "w") as f:
-        f.write(fig.__str__())
-        global_data.running_counter += 1
+    #with open(f'sqr_{global_data.focused_square_ind}_fig_{global_data.running_counter}.txt', "w") as f:
+    #    f.write(fig.__str__())
+    #    global_data.running_counter += 1
     return fig
 
 

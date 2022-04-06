@@ -50,7 +50,7 @@ DEFAULT_STYLE_DATA_CONDITIONAL = [
 
 
 
-def parse_pgn(contents, filename, is_new_pgn):
+def parse_pgn(contents, filename):
     if contents is None:
         return dash.no_update
     content_type, content_string = contents.split(',')
@@ -64,20 +64,19 @@ def parse_pgn(contents, filename, is_new_pgn):
     except Exception as e:
         return 'Upload failed'
 
-    if is_new_pgn:
-        board = first_game.board()
+    board = first_game.board()
         #fen = board.fen()
         # game_data_pgn.board = board
-        data = [deepcopy(board)]
-        for move in first_game.mainline_moves():
-            board.push(move)
-            data.append(deepcopy(board))
+    data = [deepcopy(board)]
+    for move in first_game.mainline_moves():
+        board.push(move)
+        data.append(deepcopy(board))
             #print('MOVE STACK LEN', len(board.move_stack))
 
-        global_data.pgn_data = data
-        global_data.set_board(data[0])
+    global_data.pgn_data = data
+    global_data.set_board(data[0])
 
-        global_data.move_table_boards = {}
+    global_data.move_table_boards = {}
 
     game_info = f'**File**: {filename}\n'
     game_info += f'**White**: {first_game.headers.get("White", "?")}\n'
@@ -307,15 +306,7 @@ def set_position_mode(mode):
 )
 def update_pgn(content, filename):
     triggerers = dash.callback_context.triggered
-    is_new_pgn = True
-    #TODO: Add position mode selector so below makes any sense
-    for triggerer in triggerers:
-        if triggerer['prop_id'] == 'position-mode-selector.value':
-            is_new_pgn = False
-            break
-    # if position_mode == 'fen':
-    #    return ''
-    info = parse_pgn(content, filename, is_new_pgn)
+    info = parse_pgn(content, filename)
     table_data = get_datatable_data()
 
     hidden = global_data.pgn_data == []

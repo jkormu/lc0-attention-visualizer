@@ -124,7 +124,11 @@ def update_axis(fig):
         showticklabels = True
         val_range = [-0.5, 63.5]
         ticks = 'outside'
+        title_x = {'text': 'Keys', 'standoff': 1}
+        title_y = {'text': 'Queries', 'standoff': 1}
     else:
+        title_x = None
+        title_y = None
         tickvals = list(range(8))  # [0, 1, 2, 3, 4, 5, 6, 7]
         ticktext_x = [letter for letter in 'abcdefgh']
         ticktext_y = [letter for letter in '12345678']
@@ -132,7 +136,7 @@ def update_axis(fig):
         val_range = [-0.5, 7.5]
         ticks = ''
 
-    fig.update_xaxes(title=None,
+    fig.update_xaxes(title=title_x,
                      range=val_range,
                      # ticklen=50,
                      zeroline=False,
@@ -147,7 +151,7 @@ def update_axis(fig):
                      # mirror='ticks',
                      fixedrange=True
                      )
-    fig.update_yaxes(title=None,
+    fig.update_yaxes(title=title_y,
                      range=val_range,
                      zeroline=False,
                      showgrid=False,

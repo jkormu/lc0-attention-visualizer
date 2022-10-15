@@ -46,7 +46,7 @@ def heatmap():
     # We need to recalculate graph when grid size changes, other wise layout is a mess (Dash bug?). Use hidden Div's children to trigger callback for graph recalc.
     # Otherwise we can just recalculate figure part and frontend rendering will be much faster
     graph = html.Div(id='graph-container', children=[heatmap_graph()],
-                     style={'height': '100%', 'width': '100%', "overflow": "auto"
+                     style={'height': '100%', 'width': '100%', "overflow": "auto"#, 'textAlign': 'center'#, "display": "flex", "justifyContent":"center"
                             })
 
     print('GRAPH CREATION:', time.time() - start)
@@ -60,7 +60,7 @@ def heatmap_graph():
         'displaylogo': False,
         'modeBarButtonsToRemove': ['zoom', 'pan', 'select', 'zoomIn', 'zoomOut', 'autoScale', 'resetScale']}
 
-    style = {'height': global_data.figure_container_height, 'width': '100%'}
+    style = {'height': global_data.figure_container_height, 'width': '100%'}#, 'margin': '0 auto'}
 
     graph = dcc.Graph(figure=fig, id='graph', style=style,
                       responsive='auto',#True,  # True,
@@ -77,18 +77,24 @@ def heatmap_graph():
 
 
 def make_figure():
-    print('assumed key', global_data.subplot_rows, global_data.subplot_rows, global_data.visualization_mode_is_64x64)
+    print('assumed key', global_data.subplot_rows, global_data.subplot_cols, global_data.visualization_mode_is_64x64, global_data.show_all_heads)
     print('key', global_data.get_figure_cache_key())
     print('all keys', global_data.figure_cache.keys())
     fig = global_data.get_cached_figure()
     if fig is None:
-        titles = [f"Head {i + 1}" for i in range(global_data.number_of_heads)]
-        print('MAKING SUBPLOTS', 'rows:', global_data.subplot_rows, 'cols:', global_data.subplot_cols)
-        print('NUMBER OF HEADS:', global_data.number_of_heads)
-        fig = make_subplots(rows=global_data.subplot_rows, cols=global_data.subplot_cols, subplot_titles=titles,
-                            horizontal_spacing=0.1 / global_data.subplot_cols,
-                            vertical_spacing=0.25 / global_data.subplot_rows,
-                            )
+        if global_data.show_all_heads:
+            titles = [f"Head {i + 1}" for i in range(global_data.number_of_heads)]
+            print('MAKING SUBPLOTS', 'rows:', global_data.subplot_rows, 'cols:', global_data.subplot_cols)
+            print('NUMBER OF HEADS:', global_data.number_of_heads)
+            fig = make_subplots(rows=global_data.subplot_rows, cols=global_data.subplot_cols, subplot_titles=titles,
+                                horizontal_spacing=0.1 / global_data.subplot_cols,
+                                vertical_spacing=0.25 / global_data.subplot_rows,
+                                )
+        else:
+            print('CREATING 1x1')
+            titles = [f"head {global_data.selected_head +1}"]
+            fig = make_subplots(rows=1, cols=2, subplot_titles=titles)#go.Figure()#make_subplots(rows=1, cols=1, subplot_titles=titles)
+
     return fig
 
 
@@ -101,7 +107,8 @@ def add_layout(fig):
     layout = go.Layout(
         # title='Plot title goes here',
         margin={'t': 30, 'b': 0, 'r': 0, 'l': 0},
-        plot_bgcolor='rgb(0,0,0)'
+        #plot_bgcolor='rgb(0,0,0)',
+        #paper_bgcolor="black"
     )
 
     fig.update_layout(layout)
@@ -169,9 +176,10 @@ def update_axis(fig):
     return fig
 
 
-def add_heatmap_trace(fig, row, col):
+def add_heatmap_trace(fig, row, col, head=None):
     # print('ADDING heatmap', row, col)
-    head = (row - 1) * global_data.subplot_cols + (col - 1)
+    if head is None:
+        head = (row - 1) * global_data.subplot_cols + (col - 1)
     data = heatmap_data(head)
 
     if data is None:
@@ -200,9 +208,12 @@ def add_heatmap_traces(fig):
     print('adding traces, rows:', global_data.subplot_rows, 'cols:', global_data.subplot_cols)
     #adding traces is quick so we don't bother using cached values. Wipe old traces and add new.
     fig.data = []
-    for row in range(global_data.subplot_rows):
-        for col in range(global_data.subplot_cols):
-            fig = add_heatmap_trace(fig, row + 1, col + 1)
+    if global_data.show_all_heads:
+        for row in range(global_data.subplot_rows):
+            for col in range(global_data.subplot_cols):
+                fig = add_heatmap_trace(fig, row + 1, col + 1)
+    else:
+        fig = add_heatmap_trace(fig, 1, 1, global_data.selected_head)
     return fig
 
 
@@ -289,7 +300,7 @@ def update_heatmap_figure(click_data, mode, layer, *args):
     if trigger == 'selected-model.children':
         fig = heatmap_figure()  # dash.no_update#heatmap_figure()
         # container = heatmap_graph()
-
+    global_data.cache_figure(fig)
     return fig, dash.no_update, dash.no_update
 #"""
 

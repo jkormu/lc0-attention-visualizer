@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
+import dash
+
 from server import app
-from dash import dcc, html
+from dash import dcc, html, Input, Output
 from activation_heatmap import heatmap
 from fen_input import fen_component
-from controls import mode_selector, layer_selector, model_selector
+from controls import mode_selector, layer_selector, model_selector, head_selector
 from position_pane import position_pane
+from global_data import global_data
+
+from constants import LEFT_PANE_WIDTH, RIGHT_PANE_WIDTH, GRAPH_PANE_HEIGHT, HEADER_HEIGHT, CONTENT_HEIGHT
 
 DEBUG = False
 
@@ -21,13 +26,18 @@ else:
     RIGHT_CONTAINER_BG = WHITE
     GRAPH_CONTAINER_BG = WHITE
     CONFIG_CONTAINER_BG = WHITE
-LEFT_PANE_WIDTH = 90
-RIGHT_PANE_WIDTH = 100 - LEFT_PANE_WIDTH
-GRAPH_PANE_HEIGHT = 100
+#LEFT_PANE_WIDTH = 90
+#RIGHT_PANE_WIDTH = 100 - LEFT_PANE_WIDTH
+#GRAPH_PANE_HEIGHT = 100
+#HEADER_HEIGHT = 10
+#CONTENT_HEIGHT = 100 - HEADER_HEIGHT
 
 # config_component = config_table()
 # graph_component = tree_graph()
 
+screen_width = html.Div(id='screen-size', children='1')
+url = dcc.Location(id="url")
+hidden_info = html.Div(id='hidden-info', children=[screen_width, url], hidden=True)
 
 left_container = html.Div(
     style={'height': '100%', 'width': f'{LEFT_PANE_WIDTH}%', 'backgroundColor': LEFT_CONTAINER_BG}
@@ -48,20 +58,22 @@ left_container.children = [graph_container]
 right_container = html.Div(
     style={'height': '100%', 'width': f'{RIGHT_PANE_WIDTH}%', 'backgroundColor': RIGHT_CONTAINER_BG,
            'paddingLeft': 5, 'boxSizing': 'border-box',
-           #'display': 'flex', #'flexDirection': 'column'
+           # 'display': 'flex', #'flexDirection': 'column'
            }
 )
 
 right_container.children = [position_pane()]
 
 header_container = html.Div(children=[
-    #fen_component(),
+    # fen_component(),
     mode_selector(),
     layer_selector(),
     model_selector(),
+    head_selector(),
+    html.Button(id='test-button', children='TEST', n_clicks=1)
 ],
     className='header-container',
-    style={'height': '10%', 'width': '100%', 'backgroundColor': APP_CONTAINER_BG,
+    style={'height': f'{HEADER_HEIGHT}%', 'width': '100%', 'backgroundColor': APP_CONTAINER_BG,
            'display': 'flex', 'flexDirection': 'row', 'alignItems:': 'flex-end',
            })
 
@@ -70,7 +82,7 @@ top_container = html.Div(children=[
     right_container,
     # left_container,
 ],
-    style={'height': '90%', 'width': '100%', 'backgroundColor': APP_CONTAINER_BG,
+    style={'height': f'{CONTENT_HEIGHT}%', 'width': '100%', 'backgroundColor': APP_CONTAINER_BG,
            'display': 'flex', 'flexDirection': 'row', 'alignItems:': 'flex-end',
            # 'overflow': 'auto',
            })
@@ -87,6 +99,7 @@ layout = html.Div(children=[header_container,
                             recalculate_graph,
                             # bottom_container,
                             # left_container,
+                            hidden_info
                             ],
                   style={'height': '100vh', 'width': '100vw', 'backgroundColor': APP_CONTAINER_BG,
                          'display': 'flex', 'flexDirection': 'column', 'alignItems:': 'flex-end',
@@ -94,3 +107,29 @@ layout = html.Div(children=[header_container,
                          })
 
 app.layout = layout
+
+app.clientside_callback(
+    """
+    function(href) {
+        var w = window.innerWidth;
+        var h = window.innerHeight; 
+        console.log(w, h)
+        return [w, h];
+    }
+    """,
+    Output('screen-size', 'children'),
+    Input('url', 'href'),
+    prevent_initial_call=True
+)
+
+
+@app.callback(Output('screen-size', 'hidden'),
+              Input('screen-size', 'children')
+              )
+def update_screen_size(size):
+    w, h = size
+    #print('TYETETETETEU', global_data.screen_w)
+    global_data.set_screen_size(w, h)
+    #print('>>>>>: WIDTH', size[0])
+    #print('>>>>>: HEIGHT', size[1])
+    return dash.no_update

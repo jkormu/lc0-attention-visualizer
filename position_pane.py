@@ -388,7 +388,8 @@ def cell_highlight(active_cell, *args):
     if global_data.move_table_boards != {}:
         board = global_data.move_table_boards[(row_ind, col_id)]
         global_data.set_board(board)
-        #print(board)
+
+        print(board)
 
     #col_ind = active_cell['column']
     #col_id = active_cell['column_id']

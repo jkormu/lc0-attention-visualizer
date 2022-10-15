@@ -1,3 +1,4 @@
+import dash
 from dash import dcc, html, Input, Output, State
 from server import app
 from global_data import global_data
@@ -49,8 +50,8 @@ def model_selector():
         className='header-control-container')  # style={'marginRight': '5px', 'marginLeft': '5px'},
     label = html.Label(html.B('Model'), className='header-label')
 
-    model_options = [{'label': model_folder, 'value': model_path} for model_folder, model_path
-                     in zip(global_data.model_folders, global_data.model_paths)]
+    model_options = [{'label': model_name, 'value': model_path} for model_name, model_path
+                     in zip(global_data.model_names, global_data.model_paths)]
     selector = dcc.Dropdown(
         options=model_options,
         value=global_data.model_paths[0],
@@ -66,6 +67,47 @@ def model_selector():
     model_selector_container.children = [label, selector, selected_model_holder]
     return model_selector_container
 
+
+def head_selector():
+    head_selector_container = html.Div(
+        className='header-control-container')  # style={'marginRight': '5px', 'marginLeft': '5px'},
+    label = html.Label(html.B('Head'), className='header-label')
+
+    show_all = dcc.Checklist(
+        id='show-all-heads',
+        options=[{'label': 'Show all', 'value': True}],
+        value=[True]
+    )
+
+    head_options = [{'label': f'Head {head + 1}', 'value': head} for head in range(global_data.number_of_heads)]
+    selector = dcc.Dropdown(
+        options=head_options,
+        value=global_data.selected_head,
+        clearable=False,
+        style={'width': '200px'},
+        id='head-selector',
+        disabled=True,
+    )
+    # selected_head_holder = html.Div(id='selected-model', children=global_data.model_paths[0], hidden=True)
+    head_selector_container.children = [label, selector, show_all]  # selected_model_holder]
+    return head_selector_container
+
+@app.callback(Output('head-selector', 'disabled'),
+              Input('show-all-heads', 'value'),
+              )
+def update_selected_model(value):
+    if value == [True]:
+        disabled = True
+        if not global_data.show_all_heads:
+            global_data.show_all_heads = True
+            global_data.grid_has_changed = True
+    else:
+        disabled = False
+        if global_data.show_all_heads:
+            global_data.show_all_heads = False
+            global_data.grid_has_changed = True
+    print('SHOW ALL HEADS', global_data.show_all_heads)
+    return disabled
 
 @app.callback([Output('selected-model', 'children'),
                Output('layer-selector', 'options'),

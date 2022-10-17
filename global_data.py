@@ -13,7 +13,7 @@ import lczerotraining.tf.tfprocess as tfprocess
 # turn off tensorflow importing and gerenerate random data to speed up development
 SIMULATE_TF = False
 SIMULATED_LAYERS = 6
-SIMULATED_HEADS = 8#16
+SIMULATED_HEADS = 8#8#16
 FIXED_ROW = None  # 1 #None to disable
 FIXED_COL = None  # 5 #None to disable
 if SIMULATE_TF:
@@ -129,7 +129,8 @@ class GlobalData:
         return key in self.figure_cache
 
     def get_figure_cache_key(self):
-        return (self.subplot_rows, self.subplot_cols, self.visualization_mode_is_64x64, self.show_all_heads)
+        return (self.subplot_rows, self.subplot_cols, self.visualization_mode_is_64x64, self.selected_head if not self.show_all_heads else -1)
+        #return (self.subplot_rows, self.subplot_cols, self.visualization_mode_is_64x64, self.show_all_heads)
 
     def get_side_to_move(self):
         return ['Black', 'White'][self.board.turn]
@@ -292,6 +293,9 @@ class GlobalData:
         print('NUMBER OF HEADS', self.number_of_heads)
         self.update_grid_shape()
 
+    def set_head(self, head):
+        self.selected_head = head
+
     def set_model(self, model):
         if model != self.model_path:
             self.model_path = model
@@ -327,9 +331,9 @@ class GlobalData:
         else:
             # print('COL selection')
             data = self.activations[head, :, self.focused_square_ind].reshape((8, 8))
-        if head == 0:
-            print(f'head {head} DATA')
-            print(data)
+        #if head == 0:
+        #    print(f'head {head} DATA')
+        #    print(data)
         # print('SHAPE', data.shape)
         return data
 

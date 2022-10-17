@@ -11,6 +11,10 @@ from utils import callback_triggered_by
 
 import time
 
+import numpy as np
+
+H_GAP = 0.1#0.175 #set 0.1 when colorscale off
+V_GAP = 0.2
 
 def heatmap_data(head):
     data = global_data.get_head_data(head)
@@ -44,7 +48,7 @@ def heatmap_figure():
 def heatmap():
     start = time.time()
     # We need to recalculate graph when grid size changes, other wise layout is a mess (Dash bug?). Use hidden Div's children to trigger callback for graph recalc.
-    # Otherwise we can just recalculate figure part and frontend rendering will be much faster
+    # Otherwise, we can just recalculate figure part and frontend rendering will be much faster
     graph = html.Div(id='graph-container', children=[heatmap_graph()],
                      style={'height': '100%', 'width': '100%', "overflow": "auto"#, 'textAlign': 'center'#, "display": "flex", "justifyContent":"center"
                             })
@@ -77,7 +81,7 @@ def heatmap_graph():
 
 
 def make_figure():
-    print('assumed key', global_data.subplot_rows, global_data.subplot_cols, global_data.visualization_mode_is_64x64, global_data.show_all_heads)
+    print('assumed key', global_data.subplot_rows, global_data.subplot_cols, global_data.visualization_mode_is_64x64,  global_data.selected_head if not global_data.show_all_heads else -1)
     print('key', global_data.get_figure_cache_key())
     print('all keys', global_data.figure_cache.keys())
     fig = global_data.get_cached_figure()
@@ -87,13 +91,13 @@ def make_figure():
             print('MAKING SUBPLOTS', 'rows:', global_data.subplot_rows, 'cols:', global_data.subplot_cols)
             print('NUMBER OF HEADS:', global_data.number_of_heads)
             fig = make_subplots(rows=global_data.subplot_rows, cols=global_data.subplot_cols, subplot_titles=titles,
-                                horizontal_spacing=0.1 / global_data.subplot_cols,
-                                vertical_spacing=0.25 / global_data.subplot_rows,
+                                horizontal_spacing=H_GAP / global_data.subplot_cols,
+                                vertical_spacing=V_GAP / global_data.subplot_rows,
                                 )
         else:
             print('CREATING 1x1')
             titles = [f"head {global_data.selected_head +1}"]
-            fig = make_subplots(rows=1, cols=2, subplot_titles=titles)#go.Figure()#make_subplots(rows=1, cols=1, subplot_titles=titles)
+            fig = make_subplots(rows=1, cols=1, subplot_titles=titles)#go.Figure()#make_subplots(rows=1, cols=1, subplot_titles=titles)
 
     return fig
 
@@ -106,7 +110,9 @@ def add_layout(fig):
 
     layout = go.Layout(
         # title='Plot title goes here',
-        margin={'t': 30, 'b': 0, 'r': 0, 'l': 0},
+        margin={'t': 40, 'b': 40, 'r': 40, 'l': 40},
+        #coloraxis={'colorscale': 'Viridis'}
+        #pa
         #plot_bgcolor='rgb(0,0,0)',
         #paper_bgcolor="black"
     )
@@ -125,21 +131,27 @@ def add_layout(fig):
 
 def update_axis(fig):
     if global_data.visualization_mode_is_64x64:
-        tickvals = list(range(0, 64, 4))
+        tickvals_x = list(range(0, 64, 4))
+        tickvals_y = list(range(3, 67, 4))
         ticktext_x = [x + y for x, y in zip('ae' * 8, '1122334455667788')]
+        #tickvals = list(range(0, 64))
+        #ticktext_x = [x + y for x, y in zip('abcdefg' * 8, '1'*8 + '2'*8 + '3'*8 + '4'*8 + '5'*8 + '6'*8 + '7'*8 + '8'*8)]
         ticktext_y = ticktext_x[::-1]
         showticklabels = True
+        #ticklabelstep = 4
         val_range = [-0.5, 63.5]
         ticks = 'outside'
-        title_x = {'text': 'Keys', 'standoff': 1}
-        title_y = {'text': 'Queries', 'standoff': 1}
+        title_x = {'text': "Keys ('to' square)", 'standoff': 1}
+        title_y = {'text': "Queries ('from' square)", 'standoff': 1}
     else:
         title_x = None
         title_y = None
-        tickvals = list(range(8))  # [0, 1, 2, 3, 4, 5, 6, 7]
+        tickvals_x = list(range(8))  # [0, 1, 2, 3, 4, 5, 6, 7]
+        tickvals_y = tickvals_x
         ticktext_x = [letter for letter in 'abcdefgh']
         ticktext_y = [letter for letter in '12345678']
         showticklabels = True
+        #ticklabelstep = 1
         val_range = [-0.5, 7.5]
         ticks = ''
 
@@ -153,10 +165,11 @@ def update_axis(fig):
                      # constraintoward='right',
                      ticks=ticks,  # ticks,
                      ticktext=ticktext_x,
-                     tickvals=tickvals,
+                     tickvals=tickvals_x,
                      showticklabels=showticklabels,
                      # mirror='ticks',
-                     fixedrange=True
+                     fixedrange=True,
+                     #ticklabelstep=ticklabelstep,
                      )
     fig.update_yaxes(title=title_y,
                      range=val_range,
@@ -167,11 +180,12 @@ def update_axis(fig):
                      constraintoward='top',
                      ticks=ticks,  # ticks,
                      ticktext=ticktext_y,
-                     tickvals=tickvals,
+                     tickvals=tickvals_y,
                      showticklabels=showticklabels,
                      # mirror='allticks',
                      # side='top',
-                     fixedrange=True
+                     fixedrange=True,
+                     #ticklabelstep=ticklabelstep
                      )
     return fig
 
@@ -187,18 +201,43 @@ def add_heatmap_trace(fig, row, col, head=None):
 
     if global_data.visualization_mode_is_64x64:
         xgap, ygap = 0, 0
-        hovertemplate = '<b>%{z}</b><extra></extra>'
+        #hovertemplate = 'Query: <b>%{y}</b> <br> Key: <b>%{x}</b> <br> value: <b>%{z}</b><extra></extra>'
+        hovertemplate = 'Query: <b>%{customdata[0]}</b> <br>Key:   <b>%{customdata[1]}</b> <br> value: <b>%{z:.5f}</b><extra></extra>'
+        customdata_x = [[letter + ind for ind in '12345678' for letter in 'abcdefgh'] for _ in range(64)]
+        customdata_y = [[letter + ind for _ in range(64)] for ind in '12345678'[::-1] for letter in 'abcdefgh'[::-1]]
+        customdata = np.moveaxis([customdata_x, customdata_y], 0, -1)#[customdata_x, customdata_y]
+
     else:
         xgap, ygap = 2, 2
         hovertemplate = '<b>%{x}%{y}</b>: <b>%{z}</b><extra></extra>'
+        customdata = None
+
+    #showscale = True if (col == row == 1) else False
+
+    #d = (1/global_data.subplot_rows)
+    #d2 = (1/global_data.subplot_cols)
+
+    #offset = 1/global_data.subplot_cols - (H_GAP/(global_data.subplot_cols))/2 - (H_GAP/(global_data.subplot_cols))/4
+
+    #len = (1 - V_GAP/global_data.subplot_rows) / global_data.subplot_rows #- #V_GAP/global_data.subplot_rows
+    #offset2 = len/2 #1/global_data.subplot_rows - (V_GAP/global_data.subplot_rows)
+
+    #cx = (col-1)*(d2 + (H_GAP / global_data.subplot_cols)/global_data.subplot_cols) + offset #(d2 - (H_GAP / global_data.subplot_cols))
+    #cy = (row-1)*(d + (V_GAP / global_data.subplot_rows)/global_data.subplot_rows) + offset2  #d/2
+
+
 
     trace = go.Heatmap(
         z=data,
         colorscale='Viridis',
-        showscale=False,
+        showscale=False,#True,
+        #colorbar=dict(len=len, y=cy, x=cx, ypad=0, ticklabelposition='inside', ticks='inside', ticklen=3,
+        #              tickfont=dict(color='#7e807f')),
         xgap=xgap,
         ygap=ygap,
-        hovertemplate=hovertemplate
+        hovertemplate=hovertemplate,
+        customdata=customdata,
+        #coloraxis='coloraxis1'
     )
     fig.add_trace(trace, row=row, col=col)
     return fig
@@ -255,16 +294,21 @@ def add_pieces(fig):
               [Input('graph', 'clickData'),
                Input('mode-selector', 'value'),
                Input('layer-selector', 'value'),
+               Input('head-selector', 'value'),
                Input('selected-model', 'children'),  # New model was selected
                Input('move-table', 'style_data_conditional'),  # New move was selected in move table
-               Input('position-mode-changed-indicator', 'children'), # fen/pgn mode changed
-               Input('fen-text', 'children')  # New fen was set
+               Input('position-mode-changed-indicator', 'children'),  # fen/pgn mode changed
+               Input('fen-text', 'children'),  # New fen was set
+               Input('head-selector', 'disabled'),  # Show all heads checkbox value was changed
                ])
-def update_heatmap_figure(click_data, mode, layer, *args):
+def update_heatmap_figure(click_data, mode, layer, head, *args):
     fig = dash.no_update
     trigger = callback_triggered_by()
     global_data.set_visualization_mode(mode)
     global_data.set_layer(layer)
+    print('>>>>>>>>>>>>>>>>HEAD', head)
+    global_data.set_head(head)
+    print('>>>>>>>>>>>>>>>>globalHEAD', global_data.selected_head)
     print('MODE', mode)
     if trigger == 'graph.clickData' and not click_data:
         return dash.no_update, dash.no_update, dash.no_update  # , dash.no_update, dash.no_update
@@ -292,7 +336,7 @@ def update_heatmap_figure(click_data, mode, layer, *args):
         fig = heatmap_figure()
         # container = dash.no_update
 
-    if trigger in ('mode-selector.value', 'layer-selector.value', 'move-table.style_data_conditional', 'position-mode-changed-indicator.children'):
+    if trigger in ('mode-selector.value', 'layer-selector.value', 'move-table.style_data_conditional', 'position-mode-changed-indicator.children', 'head-selector.value'):
         #print('LAYER SELECTOR UPDATE')
         fig = heatmap_figure()
         # container = dash.no_update

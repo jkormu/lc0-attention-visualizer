@@ -57,7 +57,7 @@ left_container.children = [graph_container]
 
 right_container = html.Div(
     style={'height': '100%', 'width': f'{RIGHT_PANE_WIDTH}%', 'backgroundColor': RIGHT_CONTAINER_BG,
-           'paddingLeft': 5, 'boxSizing': 'border-box',
+           'paddingLeft': 5, 'paddingRight': 5, 'paddingTop': 5,  'boxSizing': 'border-box',
            # 'display': 'flex', #'flexDirection': 'column'
            }
 )
@@ -70,12 +70,18 @@ header_container = html.Div(children=[
     layer_selector(),
     model_selector(),
     head_selector(),
-    html.Button(id='test-button', children='TEST', n_clicks=1)
+    #html.Button(id='test-button', children='TEST', n_clicks=1)
 ],
     className='header-container',
     style={'height': f'{HEADER_HEIGHT}%', 'width': '100%', 'backgroundColor': APP_CONTAINER_BG,
            'display': 'flex', 'flexDirection': 'row', 'alignItems:': 'flex-end',
-           })
+            'paddingTop': '5px', 'paddingBottom': '5px'
+           }
+    #style = {'height': f'100px', 'width': '100%', 'backgroundColor': APP_CONTAINER_BG,
+    #     'display': 'flex', 'flexDirection': 'row', 'alignItems:': 'flex-end',
+    #         #'paddingTop': '5px', 'paddingBottom': '5px'
+    #     }
+)
 
 top_container = html.Div(children=[
     left_container,
@@ -85,7 +91,12 @@ top_container = html.Div(children=[
     style={'height': f'{CONTENT_HEIGHT}%', 'width': '100%', 'backgroundColor': APP_CONTAINER_BG,
            'display': 'flex', 'flexDirection': 'row', 'alignItems:': 'flex-end',
            # 'overflow': 'auto',
-           })
+           }
+#style = {'width': '100%', 'backgroundColor': APP_CONTAINER_BG,
+#         'display': 'flex', 'flexDirection': 'row', 'alignItems:': 'flex-end',
+#         # 'overflow': 'auto',
+#         }
+)
 
 # bottom_container = html.Div(children=[
 # ],

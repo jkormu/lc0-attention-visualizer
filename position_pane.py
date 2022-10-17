@@ -109,6 +109,8 @@ def parse_pgn(contents, filename):
 def position_pane():
     container = html.Div(style={'height': '100%',
                                 'display': 'flex', 'flexDirection': 'column',
+                                #'paddingTop': '5px'
+                                #'padding' : '10px 10px 10px 10px'
                                 #       'position': 'relative',
                                 # 'width': '100%',
                                 # 'paddingBottom': FEN_PGN_COMPONENT_RELATIVE_HEIGHT,
@@ -167,7 +169,7 @@ def position_pane():
         children=[html.Div(style={'flex': 1}),
                   html.Div([
                       'Drag and Drop a pgn file or ',
-                      html.A('Select File')
+                      html.A('Select File', id='link')
                   ],
                       style={'flex': 1}
                   ),

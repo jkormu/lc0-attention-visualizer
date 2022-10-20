@@ -92,6 +92,29 @@ def head_selector():
     head_selector_container.children = [label, selector, show_all]  # selected_model_holder]
     return head_selector_container
 
+
+def colorscale_selector():
+    colorscale_selector_container = html.Div(className='header-control-container')
+    label = html.Label(html.B('Colorscale'), className='header-label')
+    show_scale = dcc.Checklist(
+        id='show-colorscale',
+        options=[{'label': 'Show scale', 'value': True}],
+        value=[True]
+    )
+    selector = dcc.RadioItems(
+        options=[
+            {'label': "row/column min/max", 'value': 'mode1'},
+            {'label': "head mix/max", 'value': 'mode2'},
+            {'label': "layer min/max", 'value': 'mode3'}
+        ],
+        value='3',
+        style={'display': 'flex', 'flexDirection': 'column'},  # , 'alignItems:': 'flex-end'}
+        id='colorscale-mode-selector'
+    )
+    colorscale_selector_container.children = [label, selector, show_scale]
+
+    return colorscale_selector_container
+
 @app.callback(Output('head-selector', 'disabled'),
               Input('show-all-heads', 'value'),
               )

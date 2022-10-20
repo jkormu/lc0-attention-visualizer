@@ -13,7 +13,7 @@ import time
 
 import numpy as np
 
-H_GAP = 0.1#0.175 #set 0.1 when colorscale off
+H_GAP = 0.1#0.1#0.175 #set 0.1 when colorscale off
 V_GAP = 0.2
 
 def heatmap_data(head):
@@ -108,9 +108,19 @@ def add_layout(fig):
         print('Using existing layout')
         return fig
 
+    #coloraxis1 = None
+    #if global_data.visualization_mode_is_64x64:
+    #    if global_data.colorscale_mode == '3':
+    #        coloraxis1 = {'colorscale': 'Viridis'}
+
+    coloraxis = None
+    if global_data.show_colorscale and global_data.colorscale_mode == 'mode3':
+        coloraxis = {'colorscale': 'Viridis'}
+
     layout = go.Layout(
         # title='Plot title goes here',
         margin={'t': 40, 'b': 40, 'r': 40, 'l': 40},
+        coloraxis1=coloraxis
         #coloraxis={'colorscale': 'Viridis'}
         #pa
         #plot_bgcolor='rgb(0,0,0)',
@@ -155,6 +165,8 @@ def update_axis(fig):
         val_range = [-0.5, 7.5]
         ticks = ''
 
+
+
     fig.update_xaxes(title=title_x,
                      range=val_range,
                      # ticklen=50,
@@ -162,7 +174,7 @@ def update_axis(fig):
                      showgrid=False,
                      scaleanchor='y',
                      constrain='domain',
-                     # constraintoward='right',
+                     #constraintoward='left',
                      ticks=ticks,  # ticks,
                      ticktext=ticktext_x,
                      tickvals=tickvals_x,
@@ -171,6 +183,7 @@ def update_axis(fig):
                      fixedrange=True,
                      #ticklabelstep=ticklabelstep,
                      )
+
     fig.update_yaxes(title=title_y,
                      range=val_range,
                      zeroline=False,
@@ -190,6 +203,22 @@ def update_axis(fig):
     return fig
 
 
+def calc_colorbar(row, col):
+    d = (1/global_data.subplot_rows)
+    d2 = (1/global_data.subplot_cols)
+
+    offset = 1/global_data.subplot_cols - (H_GAP/(global_data.subplot_cols))/2 - (H_GAP/(global_data.subplot_cols))/4
+
+    len = (1 - V_GAP/global_data.subplot_rows) / global_data.subplot_rows #- #V_GAP/global_data.subplot_rows
+    offset2 = len/2 #1/global_data.subplot_rows - (V_GAP/global_data.subplot_rows)
+
+    cx = (col-1)*(d2 + (H_GAP / global_data.subplot_cols)/global_data.subplot_cols) + offset
+    cy = (row-1)*(d + (V_GAP / global_data.subplot_rows)/global_data.subplot_rows) + offset2
+
+    colorbar=dict(len=len, y=cy, x=cx, ypad=0, ticklabelposition='inside', ticks='inside', ticklen=3, tickfont=dict(color='#7e807f'))
+
+    return colorbar
+
 def add_heatmap_trace(fig, row, col, head=None):
     # print('ADDING heatmap', row, col)
     if head is None:
@@ -202,7 +231,7 @@ def add_heatmap_trace(fig, row, col, head=None):
     if global_data.visualization_mode_is_64x64:
         xgap, ygap = 0, 0
         #hovertemplate = 'Query: <b>%{y}</b> <br> Key: <b>%{x}</b> <br> value: <b>%{z}</b><extra></extra>'
-        hovertemplate = 'Query: <b>%{customdata[0]}</b> <br>Key:   <b>%{customdata[1]}</b> <br> value: <b>%{z:.5f}</b><extra></extra>'
+        hovertemplate = 'Query: <b>%{customdata[0]}</b> <br>Key: <b>%{customdata[1]}</b> <br>value: <b>%{z:.5f}</b><extra></extra>'
         customdata_x = [[letter + ind for ind in '12345678' for letter in 'abcdefgh'] for _ in range(64)]
         customdata_y = [[letter + ind for _ in range(64)] for ind in '12345678'[::-1] for letter in 'abcdefgh'[::-1]]
         customdata = np.moveaxis([customdata_x, customdata_y], 0, -1)#[customdata_x, customdata_y]
@@ -211,6 +240,24 @@ def add_heatmap_trace(fig, row, col, head=None):
         xgap, ygap = 2, 2
         hovertemplate = '<b>%{x}%{y}</b>: <b>%{z}</b><extra></extra>'
         customdata = None
+
+    coloraxis = None
+    #Colorscale
+
+    #if global_data.visualization_mode_is_64x64:
+    #    if global_data.colorscale_mode == '3':
+    #        coloraxis = 'coloraxis1'
+
+    coloraxis = None
+    colorscale = 'Viridis'
+    colorbar = None
+    if global_data.show_colorscale and global_data.colorscale_mode == 'mode3':
+        coloraxis = 'coloraxis1'
+        colorscale = None
+
+    elif global_data.show_colorscale:
+        colorbar = calc_colorbar(row, col)
+
 
     #showscale = True if (col == row == 1) else False
 
@@ -229,15 +276,16 @@ def add_heatmap_trace(fig, row, col, head=None):
 
     trace = go.Heatmap(
         z=data,
-        colorscale='Viridis',
-        showscale=False,#True,
+        colorscale=colorscale,
+        showscale=global_data.show_colorscale,#True,
+        colorbar=colorbar,
         #colorbar=dict(len=len, y=cy, x=cx, ypad=0, ticklabelposition='inside', ticks='inside', ticklen=3,
         #              tickfont=dict(color='#7e807f')),
         xgap=xgap,
         ygap=ygap,
         hovertemplate=hovertemplate,
         customdata=customdata,
-        #coloraxis='coloraxis1'
+        coloraxis=coloraxis
     )
     fig.add_trace(trace, row=row, col=col)
     return fig
@@ -295,21 +343,23 @@ def add_pieces(fig):
                Input('mode-selector', 'value'),
                Input('layer-selector', 'value'),
                Input('head-selector', 'value'),
+               Input('colorscale-mode-selector', 'value'),
+               Input('show-colorscale', 'value'),
                Input('selected-model', 'children'),  # New model was selected
                Input('move-table', 'style_data_conditional'),  # New move was selected in move table
                Input('position-mode-changed-indicator', 'children'),  # fen/pgn mode changed
                Input('fen-text', 'children'),  # New fen was set
                Input('head-selector', 'disabled'),  # Show all heads checkbox value was changed
                ])
-def update_heatmap_figure(click_data, mode, layer, head, *args):
+def update_heatmap_figure(click_data, mode, layer, head, colorscale_mode, show_colorscale, *args):
     fig = dash.no_update
     trigger = callback_triggered_by()
     global_data.set_visualization_mode(mode)
     global_data.set_layer(layer)
-    print('>>>>>>>>>>>>>>>>HEAD', head)
+
     global_data.set_head(head)
-    print('>>>>>>>>>>>>>>>>globalHEAD', global_data.selected_head)
-    print('MODE', mode)
+
+    global_data.set_colorscale_mode(colorscale_mode, show_colorscale)
     if trigger == 'graph.clickData' and not click_data:
         return dash.no_update, dash.no_update, dash.no_update  # , dash.no_update, dash.no_update
 
@@ -336,7 +386,11 @@ def update_heatmap_figure(click_data, mode, layer, head, *args):
         fig = heatmap_figure()
         # container = dash.no_update
 
-    if trigger in ('mode-selector.value', 'layer-selector.value', 'move-table.style_data_conditional', 'position-mode-changed-indicator.children', 'head-selector.value'):
+    if trigger in ('mode-selector.value', 'layer-selector.value',
+                   'move-table.style_data_conditional',
+                   'position-mode-changed-indicator.children',
+                   'head-selector.value', 'colorscale-mode-selector.value',
+                   'show-colorscale.value'):
         #print('LAYER SELECTOR UPDATE')
         fig = heatmap_figure()
         # container = dash.no_update

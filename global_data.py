@@ -11,7 +11,7 @@ import lczerotraining.tf.tfprocess as tfprocess
 
 
 # turn off tensorflow importing and gerenerate random data to speed up development
-SIMULATE_TF = False
+SIMULATE_TF = True
 SIMULATED_LAYERS = 6
 SIMULATED_HEADS = 8#8#16
 FIXED_ROW = None  # 1 #None to disable
@@ -61,6 +61,9 @@ class GlobalData:
         self.selected_head = 0
         self.show_all_heads = True
 
+        self.show_colorscale = True
+        self.colorscale_mode = 'mode3'
+
         self.figure_container_height = '100%'  # '100%'
 
         self.running_counter = 0  # used to pass new values to hidden indicator elements which will trigger follow-up callback
@@ -71,7 +74,6 @@ class GlobalData:
         # self.figure_layout_annotations = None
         # self.need_update_axis = True
 
-        print('SETTING SCREEN SIZES IN  GLOBAL DATA')
 
         self.screen_w = 0
         self.screen_h = 0
@@ -103,6 +105,7 @@ class GlobalData:
 
         self.move_table_active_cell = None
 
+
     def set_screen_size(self, w, h):
         self.screen_w = w
         self.screen_h = h
@@ -110,6 +113,10 @@ class GlobalData:
         self.figure_w = w*LEFT_PANE_WIDTH/100
         self.figure_h = h*CONTENT_HEIGHT/100
         print('GRAPH AREA', self.figure_w, self.figure_h)
+
+    def set_colorscale_mode(self, mode, show):
+        self.colorscale_mode = mode
+        self.show_colorscale = show == [True]
 
     def cache_figure(self, fig):
         if not self.check_if_figure_is_cached():

@@ -5,7 +5,7 @@ from server import app
 from dash import dcc, html, Input, Output
 from activation_heatmap import heatmap
 from fen_input import fen_component
-from controls import mode_selector, layer_selector, model_selector, head_selector
+from controls import mode_selector, layer_selector, model_selector, head_selector, colorscale_selector
 from position_pane import position_pane
 from global_data import global_data
 
@@ -37,7 +37,9 @@ else:
 
 screen_width = html.Div(id='screen-size', children='1')
 url = dcc.Location(id="url")
-hidden_info = html.Div(id='hidden-info', children=[screen_width, url], hidden=True)
+heatmap_size = html.Div(id='heatmap-size', children='1')
+interval = dcc.Interval(id='updater', interval=5000)
+hidden_info = html.Div(id='hidden-info', children=[screen_width, url, heatmap_size, interval], hidden=True)
 
 left_container = html.Div(
     style={'height': '100%', 'width': f'{LEFT_PANE_WIDTH}%', 'backgroundColor': LEFT_CONTAINER_BG}
@@ -70,6 +72,7 @@ header_container = html.Div(children=[
     layer_selector(),
     model_selector(),
     head_selector(),
+    colorscale_selector()
     #html.Button(id='test-button', children='TEST', n_clicks=1)
 ],
     className='header-container',
@@ -132,6 +135,34 @@ app.clientside_callback(
     Input('url', 'href'),
     prevent_initial_call=True
 )
+#var el = document.querySelectorAll("rect.nsewdrag")
+app.clientside_callback(
+    """
+    function(n_intervals) {
+        if (typeof window.HMoldWidth == 'undefined') {
+            window.HMoldWidth = 0;
+            window.HMoldHeight = 0;
+        }
+        var el = document.querySelector("rect.nsewdrag")//document.getElementsByTagName("div")
+        var w = el.getAttribute('width');
+        var h = el.getAttribute('height');
+        console.log(w, h, window.HMoldWidth, window.MHoldHeight);
+        if (w == window.HMoldWidth && h == window.HMoldHeight) {
+            return window.dash_clientside.no_update
+        }
+        window.HMoldWidth = w;
+        window.HMoldHeight = h;
+        //window.dash_clientside.no_update
+        console.log(w, h)
+        return [w, h];
+    }
+    """,
+    Output('heatmap-size', 'children'),
+    Input('updater', 'n_intervals'),
+    prevent_initial_call=True
+)
+
+#document.querySelectorAll("rect.nsewdrag")
 
 
 @app.callback(Output('screen-size', 'hidden'),
@@ -141,6 +172,20 @@ def update_screen_size(size):
     w, h = size
     #print('TYETETETETEU', global_data.screen_w)
     global_data.set_screen_size(w, h)
-    #print('>>>>>: WIDTH', size[0])
-    #print('>>>>>: HEIGHT', size[1])
+    print('>>>>>: WIDTH', size[0])
+    print('>>>>>: HEIGHT', size[1])
+    return dash.no_update
+
+
+@app.callback(Output('heatmap-size', 'hidden'),
+              Input('heatmap-size', 'children')
+              )
+def heatmap_size(size):
+    if size != '1':
+        print('-----------------------HEATMAP SIZE',size)
+        #w, h = size
+        #print('TYETETETETEU', global_data.screen_w)
+        #global_data.set_screen_size(w, h)
+        print('>>>>>: HEATMAP WIDTH', size[0])
+        print('>>>>>: HEATMAP HEIGHT', size[1])
     return dash.no_update

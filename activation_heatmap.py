@@ -13,8 +13,9 @@ import time
 
 import numpy as np
 
-H_GAP = 0.1#0.1#0.175 #set 0.1 when colorscale off
-V_GAP = 0.2
+
+V_GAP = 0.15
+LAYOUT_MARGIN_V = 40
 
 def heatmap_data(head):
     data = global_data.get_head_data(head)
@@ -42,6 +43,12 @@ def heatmap_figure():
     #with open(f'sqr_{global_data.focused_square_ind}_fig_{global_data.running_counter}.txt', "w") as f:
     #    f.write(fig.__str__())
     #    global_data.running_counter += 1
+
+    print('OUT------------------------------------------------------------')
+    print(fig)
+    print('OUT END------------------------------------------------------------')
+
+
     return fig
 
 
@@ -49,10 +56,10 @@ def heatmap():
     start = time.time()
     # We need to recalculate graph when grid size changes, other wise layout is a mess (Dash bug?). Use hidden Div's children to trigger callback for graph recalc.
     # Otherwise, we can just recalculate figure part and frontend rendering will be much faster
+      #
     graph = html.Div(id='graph-container', children=[heatmap_graph()],
                      style={'height': '100%', 'width': '100%', "overflow": "auto"#, 'textAlign': 'center'#, "display": "flex", "justifyContent":"center"
                             })
-
     print('GRAPH CREATION:', time.time() - start)
     return graph
 
@@ -91,7 +98,7 @@ def make_figure():
             print('MAKING SUBPLOTS', 'rows:', global_data.subplot_rows, 'cols:', global_data.subplot_cols)
             print('NUMBER OF HEADS:', global_data.number_of_heads)
             fig = make_subplots(rows=global_data.subplot_rows, cols=global_data.subplot_cols, subplot_titles=titles,
-                                horizontal_spacing=H_GAP / global_data.subplot_cols,
+                                horizontal_spacing=global_data.heatmap_horizontal_gap / global_data.subplot_cols,
                                 vertical_spacing=V_GAP / global_data.subplot_rows,
                                 )
         else:
@@ -99,14 +106,15 @@ def make_figure():
             titles = [f"head {global_data.selected_head +1}"]
             fig = make_subplots(rows=1, cols=1, subplot_titles=titles)#go.Figure()#make_subplots(rows=1, cols=1, subplot_titles=titles)
 
+    print('-------------')
+    print(fig)
+    print('-------------')
+
     return fig
 
 
 def add_layout(fig):
     start = time.time()
-    if global_data.check_if_figure_is_cached():
-        print('Using existing layout')
-        return fig
 
     #coloraxis1 = None
     #if global_data.visualization_mode_is_64x64:
@@ -114,12 +122,19 @@ def add_layout(fig):
     #        coloraxis1 = {'colorscale': 'Viridis'}
 
     coloraxis = None
-    if global_data.show_colorscale and global_data.colorscale_mode == 'mode3':
-        coloraxis = {'colorscale': 'Viridis'}
+    if global_data.colorscale_mode == 'mode3':
+        cmin = np.amin(global_data.activations[:, :, :])
+        cmax = np.amax(global_data.activations[:, :, :])
+        coloraxis = {'colorscale': 'Viridis', 'colorbar': {'ypad': 0} , 'cmin': cmin, 'cmax': cmax, 'showscale': global_data.show_colorscale}
+
+    if global_data.check_if_figure_is_cached():
+        print('Using existing layout')
+        fig.update_layout({'coloraxis1': coloraxis}, overwrite=True)
+        return fig
 
     layout = go.Layout(
         # title='Plot title goes here',
-        margin={'t': 40, 'b': 40, 'r': 40, 'l': 40},
+        margin={'t': LAYOUT_MARGIN_V, 'b': LAYOUT_MARGIN_V, 'r': 40, 'l': 40},
         coloraxis1=coloraxis
         #coloraxis={'colorscale': 'Viridis'}
         #pa
@@ -165,6 +180,10 @@ def update_axis(fig):
         val_range = [-0.5, 7.5]
         ticks = ''
 
+    if not global_data.show_all_heads or (global_data.subplot_cols == 1 and global_data.subplot_rows == 1):
+        constraintowards_x = 'center'
+    else:
+        constraintowards_x = 'right'
 
 
     fig.update_xaxes(title=title_x,
@@ -174,7 +193,7 @@ def update_axis(fig):
                      showgrid=False,
                      scaleanchor='y',
                      constrain='domain',
-                     #constraintoward='left',
+                     constraintoward=constraintowards_x,
                      ticks=ticks,  # ticks,
                      ticktext=ticktext_x,
                      tickvals=tickvals_x,
@@ -204,18 +223,46 @@ def update_axis(fig):
 
 
 def calc_colorbar(row, col):
-    d = (1/global_data.subplot_rows)
-    d2 = (1/global_data.subplot_cols)
+    row = global_data.subplot_rows - row + 1 #invert
+    #row = global_data.subplot_rows - row - 1 #invert
 
-    offset = 1/global_data.subplot_cols - (H_GAP/(global_data.subplot_cols))/2 - (H_GAP/(global_data.subplot_cols))/4
+    dy = (1/global_data.subplot_rows)
+    dx = (1/global_data.subplot_cols)
 
-    len = (1 - V_GAP/global_data.subplot_rows) / global_data.subplot_rows #- #V_GAP/global_data.subplot_rows
-    offset2 = len/2 #1/global_data.subplot_rows - (V_GAP/global_data.subplot_rows)
+    offset = 1/global_data.subplot_cols - 2*(global_data.heatmap_horizontal_gap/(global_data.subplot_cols))/4#global_data.colorscale_x_offset#(494.1125)/2239.2#1/global_data.subplot_cols - 3*(global_data.heatmap_horizontal_gap/(global_data.subplot_cols))/4
 
-    cx = (col-1)*(d2 + (H_GAP / global_data.subplot_cols)/global_data.subplot_cols) + offset
-    cy = (row-1)*(d + (V_GAP / global_data.subplot_rows)/global_data.subplot_rows) + offset2
+    if global_data.heatmap_h == 0:
+        len = (1 - V_GAP/global_data.subplot_rows) / global_data.subplot_rows #- #V_GAP/global_data.subplot_rows
+        lenmode = 'fraction'
+        offset2 = len / 2
+    else:
+        #total_h = global_data.heatmap_fig_h * global_data.heatmap_h + (global_data.subplot_rows - 1)
+        len = global_data.heatmap_h/(global_data.heatmap_fig_h - 2*LAYOUT_MARGIN_V)
+        lenmode = 'fraction'
+        offset2 = len / 2
+        #lenmode = 'pixels'
+        #offset2 = 1 - len/(global_data.subplot_rows*len + V_GAP) #1/global_data.subplot_rows - (V_GAP/global_data.subplot_rows)
 
-    colorbar=dict(len=len, y=cy, x=cx, ypad=0, ticklabelposition='inside', ticks='inside', ticklen=3, tickfont=dict(color='#7e807f'))
+        tot_h = global_data.heatmap_fig_h - 2*LAYOUT_MARGIN_V
+        max_h = ((1 - V_GAP)) / global_data.subplot_rows
+        cur_h =  len
+        offset2 = 1 - (global_data.subplot_rows-1)*(dy + (V_GAP / global_data.subplot_rows)/global_data.subplot_rows) - len/2 #0#len/2 #+ (max_h - cur_h)
+
+
+    #offset = global_data.colorscale_x_offset
+    #shift = (global_data.heatmap_w + 20 + 20 + global_data.heatmap_gap)/global_data.heatmap_fig_w
+    #cx = (col - 1) * shift + offset
+
+
+    cx = (col-1)*(dx + (global_data.heatmap_horizontal_gap / global_data.subplot_cols)/global_data.subplot_cols) + offset
+    cy = (row-1)*(dy + (V_GAP / global_data.subplot_rows)/global_data.subplot_rows) + offset2
+    #cy = (global_data.subplot_rows - 1 - row) * (dy + (V_GAP / global_data.subplot_rows) / global_data.subplot_rows) + offset2
+
+    #######################
+
+
+    colorbar=dict(len=len, y=cy, x=cx, ypad=0, xpad=0, ticklabelposition='inside', ticks='inside', ticklen=3, lenmode=lenmode,
+                  tickfont=dict(color='#7e807f'))
 
     return colorbar
 
@@ -251,28 +298,43 @@ def add_heatmap_trace(fig, row, col, head=None):
     coloraxis = None
     colorscale = 'Viridis'
     colorbar = None
-    if global_data.show_colorscale and global_data.colorscale_mode == 'mode3':
+    #if global_data.show_colorscale and global_data.colorscale_mode == 'mode3':
+    if global_data.colorscale_mode == 'mode3':
         coloraxis = 'coloraxis1'
         colorscale = None
 
-    elif global_data.show_colorscale:
+    elif global_data.show_colorscale and not global_data.colorscale_mode == 'mode3' and not (not global_data.show_all_heads or (global_data.subplot_cols == 1 and global_data.subplot_rows == 1)):
         colorbar = calc_colorbar(row, col)
 
+    zmin, zmax = None, None
+
+    if global_data.colorscale_mode == 'mode2':
+        pass
+        zmin = np.amin(global_data.activations[head, :, :])
+        zmax = np.amax(global_data.activations[head, :, :])
+        print('ZMINMAX M2', head, zmin, zmax)
+
+    elif global_data.colorscale_mode == 'mode1':
+        zmin = np.amin(data)
+        zmax = np.amax(data)
+        #print('ZMINMAX M1', head, cmin, cmax)
 
     #showscale = True if (col == row == 1) else False
 
     #d = (1/global_data.subplot_rows)
     #d2 = (1/global_data.subplot_cols)
 
-    #offset = 1/global_data.subplot_cols - (H_GAP/(global_data.subplot_cols))/2 - (H_GAP/(global_data.subplot_cols))/4
+    #offset = 1/global_data.subplot_cols - (global_data.heatmap_horizontal_gap/(global_data.subplot_cols))/2 - (global_data.heatmap_horizontal_gap/(global_data.subplot_cols))/4
 
     #len = (1 - V_GAP/global_data.subplot_rows) / global_data.subplot_rows #- #V_GAP/global_data.subplot_rows
     #offset2 = len/2 #1/global_data.subplot_rows - (V_GAP/global_data.subplot_rows)
 
-    #cx = (col-1)*(d2 + (H_GAP / global_data.subplot_cols)/global_data.subplot_cols) + offset #(d2 - (H_GAP / global_data.subplot_cols))
+    #cx = (col-1)*(d2 + (global_data.heatmap_horizontal_gap / global_data.subplot_cols)/global_data.subplot_cols) + offset #(d2 - (global_data.heatmap_horizontal_gap / global_data.subplot_cols))
     #cy = (row-1)*(d + (V_GAP / global_data.subplot_rows)/global_data.subplot_rows) + offset2  #d/2
 
-
+    #zmin = np.amin(data)
+    #zmax = np.amax(data)
+    #print('ZMINMAX M1', head, zmin, zmax)
 
     trace = go.Heatmap(
         z=data,
@@ -285,7 +347,11 @@ def add_heatmap_trace(fig, row, col, head=None):
         ygap=ygap,
         hovertemplate=hovertemplate,
         customdata=customdata,
+        zmin=zmin,
+        zmax=zmax,
         coloraxis=coloraxis
+        #zmin=zmin,
+        #zmax=zmax
     )
     fig.add_trace(trace, row=row, col=col)
     return fig
@@ -337,6 +403,7 @@ def add_pieces(fig):
 # Due to probable dash/plotly bug this is not enough if figure's subplot grid dimensions change as updating only figure will result in messed up layout
 # To workaround this, we will update indicator component if grid dimension has changed, which in turn will trigger callback for full graph update
 @app.callback([Output('graph', 'figure'),
+               #Output('fig-store', 'data'),
                Output('recalculate-graph-indicator', 'children'),
                Output('graph', 'style')],
               [Input('graph', 'clickData'),
@@ -344,32 +411,37 @@ def add_pieces(fig):
                Input('layer-selector', 'value'),
                Input('head-selector', 'value'),
                Input('colorscale-mode-selector', 'value'),
+               Input('colorscale-mode-selector-64x64', 'value'),
                Input('show-colorscale', 'value'),
+               Input('heatmap-size', 'children'),
                Input('selected-model', 'children'),  # New model was selected
                Input('move-table', 'style_data_conditional'),  # New move was selected in move table
                Input('position-mode-changed-indicator', 'children'),  # fen/pgn mode changed
                Input('fen-text', 'children'),  # New fen was set
                Input('head-selector', 'disabled'),  # Show all heads checkbox value was changed
                ])
-def update_heatmap_figure(click_data, mode, layer, head, colorscale_mode, show_colorscale, *args):
+def update_heatmap_figure(click_data, mode, layer, head, colorscale_mode, colorscale_mode_64x64, show_colorscale, heatmap_size, *args):
     fig = dash.no_update
     trigger = callback_triggered_by()
     global_data.set_visualization_mode(mode)
     global_data.set_layer(layer)
+    global_data.set_heatmap_size(heatmap_size)
 
     global_data.set_head(head)
 
-    global_data.set_colorscale_mode(colorscale_mode, show_colorscale)
+    global_data.set_colorscale_mode(mode, colorscale_mode, colorscale_mode_64x64, show_colorscale)
     if trigger == 'graph.clickData' and not click_data:
         return dash.no_update, dash.no_update, dash.no_update  # , dash.no_update, dash.no_update
 
     # if grid dimensions have change we need to trigger full graph component recalc (workaround for dash bug where
     # figure layout is messed up if only figure is updated)
-    if global_data.grid_has_changed:
+    if global_data.grid_has_changed or trigger in ('colorscale-mode-selector.value', 'colorscale-mode-selector-64x64.value') or global_data.force_update_graph:
         print('GRID CHANGED')
         global_data.running_counter += 1
         global_data.grid_has_changed = False
+        global_data.force_update_graph = 0
         #Erase figure, update indicator with new value, hide graph until updated again
+        #return dash.no_update, global_data.running_counter, dash.no_update
         return {}, global_data.running_counter, {'visibility': 'hidden'}
 
     if trigger == 'graph.clickData' and not global_data.visualization_mode_is_64x64:
@@ -389,8 +461,8 @@ def update_heatmap_figure(click_data, mode, layer, head, colorscale_mode, show_c
     if trigger in ('mode-selector.value', 'layer-selector.value',
                    'move-table.style_data_conditional',
                    'position-mode-changed-indicator.children',
-                   'head-selector.value', 'colorscale-mode-selector.value',
-                   'show-colorscale.value'):
+                   'head-selector.value',
+                   'show-colorscale.value', 'heatmap-size.children'):
         #print('LAYER SELECTOR UPDATE')
         fig = heatmap_figure()
         # container = dash.no_update

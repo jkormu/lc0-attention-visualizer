@@ -11,7 +11,7 @@ import lczerotraining.tf.tfprocess as tfprocess
 
 
 # turn off tensorflow importing and gerenerate random data to speed up development
-SIMULATE_TF = True
+SIMULATE_TF = False
 SIMULATED_LAYERS = 6
 SIMULATED_HEADS = 8#8#16
 FIXED_ROW = None  # 1 #None to disable
@@ -62,7 +62,7 @@ class GlobalData:
         self.show_all_heads = True
 
         self.show_colorscale = True
-        self.colorscale_mode = 'mode3'
+        self.colorscale_mode = 'mode2'
 
         self.figure_container_height = '100%'  # '100%'
 
@@ -74,11 +74,18 @@ class GlobalData:
         # self.figure_layout_annotations = None
         # self.need_update_axis = True
 
-
         self.screen_w = 0
         self.screen_h = 0
         self.figure_w = 0
         self.figure_h = 0
+        self.heatmap_w = 0
+        self.heatmap_h = 0
+        self.heatmap_fig_w = 0
+        self.heatmap_fig_h = 0
+        self.heatmap_gap = 0
+        self.colorscale_x_offset = 0
+
+        self.heatmap_horizontal_gap = 0.275
 
         self.figure_cache = {}
 
@@ -105,6 +112,8 @@ class GlobalData:
 
         self.move_table_active_cell = None
 
+        self.force_update_graph = False
+
 
     def set_screen_size(self, w, h):
         self.screen_w = w
@@ -114,19 +123,59 @@ class GlobalData:
         self.figure_h = h*CONTENT_HEIGHT/100
         print('GRAPH AREA', self.figure_w, self.figure_h)
 
-    def set_colorscale_mode(self, mode, show):
-        self.colorscale_mode = mode
+    def set_heatmap_size(self, size):
+        if size != '1':
+            print('-----------------------HEATMAP SIZE', size)
+            # w, h = size
+            # print('TYETETETETEU', global_data.screen_w)
+            # global_data.set_screen_size(w, h)
+            print('>>>>>: HEATMAP WIDTH', size[0])
+            print('>>>>>: HEATMAP HEIGHT', size[1])
+            print('>>>>>: FIG WIDTH', size[2])
+            print('>>>>>: FIG HEIGHT', size[3])
+            print('>>>>>: HEATMAP GAP', size[4])
+
+            self.heatmap_w = float(size[0])
+            self.heatmap_h = float(size[1])
+            self.heatmap_fig_w = float(size[2])
+            self.heatmap_fig_h = float(size[3])
+            self.heatmap_gap = round(float(size[4]), 2)
+
+            self.colorscale_x_offset = float(size[5])/self.heatmap_fig_w
+
+            if size[6] == 1:
+                self.force_update_graph = True
+            else:
+                self.force_update_graph = False
+
+
+            #if self.heatmap_gap < 30:
+            #    self.heatmap_horizontal_gap += 0.025
+
+            #    self.heatmap_horizontal_gap = min(0.25, self.heatmap_horizontal_gap)
+            #if self.heatmap_gap < 200:
+            #    self.heatmap_horizontal_gap += -0.025
+            #    self.heatmap_horizontal_gap = max(0.1, self.heatmap_horizontal_gap)
+
+    def set_colorscale_mode(self, mode, colorscale_mode, colorscale_mode_64x64, show):
+        if mode == '64x64':
+            self.colorscale_mode = colorscale_mode_64x64
+        else:
+            self.colorscale_mode = colorscale_mode
         self.show_colorscale = show == [True]
 
     def cache_figure(self, fig):
         if not self.check_if_figure_is_cached():
             key = self.get_figure_cache_key()
-            self.figure_cache[key] = fig
+            cached_fig = deepcopy(fig)
+            cached_fig.update_layout({'coloraxis1': None}, overwrite=True)
+            print('CACHING FIGURE:')
+            self.figure_cache[key] = cached_fig
 
     def get_cached_figure(self):
         if self.check_if_figure_is_cached():
             key = self.get_figure_cache_key()
-            fig = self.figure_cache[key]
+            fig = deepcopy(self.figure_cache[key])
         else:
             fig = None
         return fig
@@ -136,7 +185,9 @@ class GlobalData:
         return key in self.figure_cache
 
     def get_figure_cache_key(self):
-        return (self.subplot_rows, self.subplot_cols, self.visualization_mode_is_64x64, self.selected_head if not self.show_all_heads else -1)
+        return (self.subplot_rows, self.subplot_cols, self.visualization_mode_is_64x64,
+                self.selected_head if not self.show_all_heads else -1, self.show_colorscale, self.colorscale_mode)
+        #return (self.subplot_rows, self.subplot_cols, self.visualization_mode_is_64x64, self.selected_head if not self.show_all_heads else -1, self.heatmap_horizontal_gap, self.heatmap_fig_h, self.heatmap_fig_w)
         #return (self.subplot_rows, self.subplot_cols, self.visualization_mode_is_64x64, self.show_all_heads)
 
     def get_side_to_move(self):

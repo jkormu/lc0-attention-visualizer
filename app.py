@@ -2,7 +2,7 @@
 import dash
 
 from server import app
-from dash import dcc, html, Input, Output
+from dash import dcc, html, Input, Output, State
 from activation_heatmap import heatmap
 from fen_input import fen_component
 from controls import mode_selector, layer_selector, model_selector, head_selector, colorscale_selector
@@ -38,8 +38,12 @@ else:
 screen_width = html.Div(id='screen-size', children='1')
 url = dcc.Location(id="url")
 heatmap_size = html.Div(id='heatmap-size', children='1')
-interval = dcc.Interval(id='updater', interval=5000)
-hidden_info = html.Div(id='hidden-info', children=[screen_width, url, heatmap_size, interval], hidden=True)
+interval = dcc.Interval(id='updater', interval=500)
+fig_store = dcc.Store(id='fig-store', storage_type='memory')
+hidden_info = html.Div(id='hidden-info', children=[screen_width, url, heatmap_size, interval,
+                                                   fig_store
+                                                   ], hidden=True)
+
 
 left_container = html.Div(
     style={'height': '100%', 'width': f'{LEFT_PANE_WIDTH}%', 'backgroundColor': LEFT_CONTAINER_BG}
@@ -69,10 +73,10 @@ right_container.children = [position_pane()]
 header_container = html.Div(children=[
     # fen_component(),
     mode_selector(),
-    layer_selector(),
+    colorscale_selector(),
     model_selector(),
+    layer_selector(),
     head_selector(),
-    colorscale_selector()
     #html.Button(id='test-button', children='TEST', n_clicks=1)
 ],
     className='header-container',
@@ -142,25 +146,84 @@ app.clientside_callback(
         if (typeof window.HMoldWidth == 'undefined') {
             window.HMoldWidth = 0;
             window.HMoldHeight = 0;
+            window.HM_gap = 0;
+            window.first_heatmap_right_edge = 0;
         }
-        var el = document.querySelector("rect.nsewdrag")//document.getElementsByTagName("div")
+        var el = document.querySelector(".xy > rect.nsewdrag");
+        var el2 = document.querySelector(".x2y2 > rect.nsewdrag");
+        var el_fig = document.querySelector("svg.main-svg");
+        //el_fig = document.querySelector("g.bglayer");
         var w = el.getAttribute('width');
         var h = el.getAttribute('height');
+        var w_main = el_fig.getAttribute('width');
+        var h_main = el_fig.getAttribute('height');
+        
+        //it is possible that subplot sizes get out of sync (dash bug?). Check if this is the case and signal that graph recalc is needed
+        var recalcGraph = 0;
+        if(el2 !== null && el2.getAttribute('height') !== h){
+            recalcGraph = 1;
+        }
+        
         console.log(w, h, window.HMoldWidth, window.MHoldHeight);
-        if (w == window.HMoldWidth && h == window.HMoldHeight) {
+        if (w == window.HMoldWidth && h == window.HMoldHeight && w_main == window.HM_FigWidth && h_main == window.HM_FigHeight) {
             return window.dash_clientside.no_update
         }
+        
+        var neCorner = document.querySelector(".xy > rect.nedrag");
+        var nwCorner = document.querySelector(".x2y2 > rect.nwdrag");
+        
+        console.log('neCorner', neCorner);
+        console.log('nwCorner', nwCorner);
+        
+        if(neCorner !== null && nwCorner !== null){
+            var gap = parseFloat(nwCorner.getAttribute('x')) - (parseFloat(neCorner.getAttribute('x')) + parseFloat(neCorner.getAttribute('width')));
+            var first_heatmap_right_edge = parseFloat(neCorner.getAttribute('x'));
+            window.HM_gap = gap;
+            window.first_heatmap_right_edge = first_heatmap_right_edge;
+        }
+        else{
+            gap = window.HM_gap
+            first_heatmap_right_edge = window.HM_gap
+        }
+        
         window.HMoldWidth = w;
         window.HMoldHeight = h;
+        window.HM_FigWidth = w_main;
+        window.HM_FigHeight = h_main;
+        
         //window.dash_clientside.no_update
-        console.log(w, h)
-        return [w, h];
+        console.log(w, h, h_main, w_main, gap)
+        return [w, h, w_main, h_main, gap, first_heatmap_right_edge, recalcGraph];
     }
     """,
     Output('heatmap-size', 'children'),
     Input('updater', 'n_intervals'),
     prevent_initial_call=True
 )
+
+a = '''
+app.clientside_callback(
+    """
+    function(heatmap_size, figure_data) {
+        if (!figure_data || figure_data == {}) {
+            throw window.dash_clientside.PreventUpdate;
+        }
+        console.log(figure_data);
+        console.log('FIGURE DATA UPDATE TRIGGERED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+        fig_dict_copy = JSON.parse(JSON.stringify(figure_data));//{...figure_data};
+        console.log('HERE IS FIG copy');
+        console.log(fig_dict_copy);
+        //fig_dict_copy["layout"]["title"] = "ATATATAJAK  AKNJANKJAKBA";
+        
+        return fig_dict_copy
+    }
+    """,
+    Output('graph', 'figure'),
+    Input('heatmap-size', 'hidden'),
+    Input('fig-store', 'data'),
+    prevent_initial_call=True
+)
+'''
 
 #document.querySelectorAll("rect.nsewdrag")
 
@@ -177,7 +240,7 @@ def update_screen_size(size):
     return dash.no_update
 
 
-@app.callback(Output('heatmap-size', 'hidden'),
+a = '''@app.callback(Output('heatmap-size', 'hidden'),
               Input('heatmap-size', 'children')
               )
 def heatmap_size(size):
@@ -188,4 +251,5 @@ def heatmap_size(size):
         #global_data.set_screen_size(w, h)
         print('>>>>>: HEATMAP WIDTH', size[0])
         print('>>>>>: HEATMAP HEIGHT', size[1])
-    return dash.no_update
+    return False
+'''

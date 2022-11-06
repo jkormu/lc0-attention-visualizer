@@ -51,6 +51,7 @@ left_container = html.Div(
 
 graph_container = html.Div(
     style={'height': f'{GRAPH_PANE_HEIGHT}%', 'width': '100%', 'backgroundColor': GRAPH_CONTAINER_BG,
+           #'borderRight': 'thin lightgrey solid'
            # 'position': 'relative',
            }
 )
@@ -64,6 +65,7 @@ left_container.children = [graph_container]
 right_container = html.Div(
     style={'height': '100%', 'width': f'{RIGHT_PANE_WIDTH}%', 'backgroundColor': RIGHT_CONTAINER_BG,
            'paddingLeft': 5, 'paddingRight': 5, 'paddingTop': 5,  'boxSizing': 'border-box',
+           'borderLeft': 'thin lightgrey solid'
            # 'display': 'flex', #'flexDirection': 'column'
            }
 )

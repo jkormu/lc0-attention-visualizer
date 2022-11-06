@@ -1,3 +1,13 @@
+*[class="model-loading"][data-dash-is-loading="true"]::before{
+    content: "Loading model...";
+    display: inline-block;
+    color: red;
+    visibility: visible;
+    font-size: 16px;
+    /*transition-delay: 1s;
+    transition-property: font-size;
+    transition-duration: 200ms;*/
+}
 
 .completely-hidden{
     display: none;

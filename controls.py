@@ -40,7 +40,7 @@ def layer_selector():
 
 def get_layer_options():
     # layers = len([layer for layer in global_data.activations_data if layer.shape[-1] == 64 and layer.shape[-2] == 64])
-    dropdown_options = [{'label': f'layer {layer + 1}', 'value': layer} for layer in
+    dropdown_options = [{'label': f'Layer {layer + 1} (body)', 'value': layer} for layer in
                         range(global_data.nr_of_layers_in_body)]
     return dropdown_options
 
@@ -54,18 +54,31 @@ def model_selector():
                      in zip(global_data.model_names, global_data.model_paths)]
     selector = dcc.Dropdown(
         options=model_options,
-        value=global_data.model_paths[0],
+        value=None,#global_data.model_paths[0],
         clearable=False,
         style={'width': '200px'},
         id='model-selector'
     )
+
+    #    transition-delay: 1s;
+    #transition-property: font-size;
+    #transition-duration: 200ms;
+
     # store selected model_path in hidden Div. This is to chain callbacks in correct order: Model selection should
     # first update selected layer as new model might have fewer layers than the current selected layer number. Once
     # selected layer is updated, only then it is safe to update Graph. So graph update callback is tied to model
     # holder changes and not directly to dropdown value
-    selected_model_holder = html.Div(id='selected-model', children=global_data.model_paths[0], hidden=True)
+    selected_model_holder = html.Div(id='selected-model', children=global_data.model_paths[0], hidden=False, className='model-loading', style={'fontSize': '0px',
+                                                                                                                                               #'transitionDelay': '100ms',
+                                                                                                                                               #'transitionProperty': 'font-size',
+                                                                                                                                               #'transitionDuration': '200ms'
+                                                                                                                                               })
     model_selector_container.children = [label, selector, selected_model_holder]
     return model_selector_container
+
+
+def get_head_options():
+    return [{'label': f'Head {head + 1}', 'value': head} for head in range(global_data.number_of_heads)]
 
 
 def head_selector():
@@ -79,10 +92,14 @@ def head_selector():
         value=[True]
     )
 
-    head_options = [{'label': f'Head {head + 1}', 'value': head} for head in range(global_data.number_of_heads)]
+    if global_data.selected_layer is None or global_data.model is None:
+        selected = None
+    else:
+        selected = global_data.selected_head
+
     selector = dcc.Dropdown(
-        options=head_options,
-        value=global_data.selected_head,
+        options=get_head_options(),
+        value=selected,
         clearable=False,
         style={'width': '200px'},
         id='head-selector',
@@ -108,7 +125,7 @@ def get_colorscale_options(mode64x64, disabled):
 
 def colorscale_selector():
     colorscale_selector_container = html.Div(className='header-control-container')
-    label = html.Label(html.B('Colorscale min/max'), className='header-label')
+    label = html.Label(html.B('Colorscale'), className='header-label')
     show_scale = dcc.Checklist(
         id='show-colorscale',
         options=[{'label': 'Show scale', 'value': True}],
@@ -128,7 +145,7 @@ def colorscale_selector():
 
     selector = dcc.RadioItems(
         options=get_colorscale_options(mode64x64=False, disabled=False),
-        value='mode2',
+        value='mode1',
         style={'display': 'flex', 'flexDirection': 'column'},  # , 'alignItems:': 'flex-end'}
         id='colorscale-mode-selector'
     )
@@ -150,7 +167,7 @@ def colorscale_selector():
 @app.callback(Output('head-selector', 'disabled'),
               Input('show-all-heads', 'value'),
               )
-def update_selected_model(value):
+def update_head_selector_state(value):
     if value == [True]:
         disabled = True
         if not global_data.show_all_heads:
@@ -189,10 +206,23 @@ def update_colorscale_selector_options(mode):
 
 @app.callback([Output('selected-model', 'children'),
                Output('layer-selector', 'options'),
-               Output('layer-selector', 'value')
+               Output('layer-selector', 'value'),
+               Output('head-selector', 'options'),
+               Output('head-selector', 'value')
                ],
               Input('model-selector', 'value'),
               )
 def update_selected_model(model):
+    old_head = global_data.selected_head
+    old_layer = global_data.selected_layer
     global_data.set_model(model)
-    return model, get_layer_options(), global_data.selected_layer
+    if old_head == global_data.selected_head:
+        selected_head = dash.no_update
+    else:
+        selected_head = global_data.selected_head
+    if old_layer == global_data.selected_layer:
+        selected_layer = dash.no_update
+    else:
+        selected_layer = global_data.selected_layer
+
+    return model, get_layer_options(), selected_layer, get_head_options(), selected_head

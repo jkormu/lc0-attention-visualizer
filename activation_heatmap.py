@@ -23,6 +23,8 @@ def heatmap_data(head):
 
 
 def heatmap_figure():
+    if global_data.model is None:
+        return {}
     start = time.time()
     fig = make_figure()
     print('make fig:', time.time() - start)
@@ -421,15 +423,21 @@ def add_pieces(fig):
                Input('head-selector', 'disabled'),  # Show all heads checkbox value was changed
                ])
 def update_heatmap_figure(click_data, mode, layer, head, colorscale_mode, colorscale_mode_64x64, show_colorscale, heatmap_size, *args):
+
+    if layer is None or global_data.model is None:
+        return dash.no_update, dash.no_update, {'visibility': 'hidden'}#dash.no_update
+
     fig = dash.no_update
     trigger = callback_triggered_by()
     global_data.set_visualization_mode(mode)
+    print('WHAAATATATATATATA:', layer, global_data.model)
     global_data.set_layer(layer)
     global_data.set_heatmap_size(heatmap_size)
 
     global_data.set_head(head)
 
     global_data.set_colorscale_mode(mode, colorscale_mode, colorscale_mode_64x64, show_colorscale)
+
     if trigger == 'graph.clickData' and not click_data:
         return dash.no_update, dash.no_update, dash.no_update  # , dash.no_update, dash.no_update
 

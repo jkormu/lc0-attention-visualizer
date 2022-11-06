@@ -1,5 +1,6 @@
 import chess.engine
 from constants import ROOT_DIR, CONTENT_HEIGHT, LEFT_PANE_WIDTH
+from time import sleep
 # from test_array import activations_array
 
 from copy import deepcopy
@@ -40,10 +41,10 @@ class GlobalData:
             # import chess
             # import matplotlib.patheffects as path_effects
 
-            config = ConfigProto()
-            config.gpu_options.allow_growth = True
-            session = InteractiveSession(config=config)
-            tf.keras.backend.clear_session()
+            #config = ConfigProto()
+            #config.gpu_options.allow_growth = True
+            #session = InteractiveSession(config=config)
+            #tf.keras.backend.clear_session()
 
         self.tmp = 0
         self.fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'  # '2kr3r/ppp2b2/2n4p/4p3/Q2Pq1pP/2P1N3/PP3PP1/R1B1KB1R w KQ - 3 18'#'6n1/1p1k4/3p4/pNp5/P1P4p/7P/1P4KP/r7 w - - 2 121'#
@@ -57,12 +58,12 @@ class GlobalData:
         self.subplot_mode = 'fit'  # big'#'fit'#, 'big'
         self.subplot_cols = 0
         self.subplot_rows = 0
-        self.number_of_heads = 8
-        self.selected_head = 0
+        self.number_of_heads = 0
+        self.selected_head = None
         self.show_all_heads = True
 
         self.show_colorscale = True
-        self.colorscale_mode = 'mode2'
+        self.colorscale_mode = 'mode1'
 
         self.figure_container_height = '100%'  # '100%'
 
@@ -94,7 +95,7 @@ class GlobalData:
         self.pgn_data = []  # list of boards in pgn
         self.move_table_boards = {}  # dict of boards in pgn, key is (move_table.row_ind, move_table.column_id)
 
-        self.selected_layer = 0
+        self.selected_layer = None
         self.nr_of_layers_in_body = -1
 
         self.model_paths = []
@@ -102,13 +103,17 @@ class GlobalData:
         self.model_yamls = {} #key = model path, value = yaml of that model
         self.model_cache = {}
         self.find_models2()
-        self.model_path = self.model_paths[0]  # '/home/jusufe/PycharmProjects/lc0-attention-visualizer/T12_saved_model_1M'
+        self.model_path = None#self.model_paths[0]  # '/home/jusufe/PycharmProjects/lc0-attention-visualizer/T12_saved_model_1M'
         self.model = None
         if not SIMULATE_TF:
             self.load_model()
         self.activations_data = None
-        self.update_activations_data()
-        self.set_layer(self.selected_layer)
+
+        if self.model is not None:
+            self.update_activations_data()
+
+        if self.selected_layer is not None:
+            self.set_layer(self.selected_layer)
 
         self.move_table_active_cell = None
 
@@ -165,7 +170,7 @@ class GlobalData:
         self.show_colorscale = show == [True]
 
     def cache_figure(self, fig):
-        if not self.check_if_figure_is_cached():
+        if not self.check_if_figure_is_cached() and fig != {}:
             key = self.get_figure_cache_key()
             cached_fig = deepcopy(fig)
             cached_fig.update_layout({'coloraxis1': None}, overwrite=True)
@@ -196,7 +201,8 @@ class GlobalData:
     def load_model(self):
         if self.model_path in self.model_cache:
             self.model = self.model_cache[self.model_path]
-        else:
+
+        elif self.model_path is not None:
             #net = '/home/jusufe/Projects/lc0/BT1024-3142c-swa-186000.pb.gz'
             #yaml_path = '/home/jusufe/Downloads/cfg.yaml'
             net = self.model_path
@@ -213,6 +219,9 @@ class GlobalData:
             tfp.init_net()
             tfp.replace_weights(net, ignore_errors=False)
             self.model = tfp.model
+
+        else:
+            self.model = None
 
     def find_models(self):
         import os
@@ -268,20 +277,27 @@ class GlobalData:
         print(self.model_paths)
 
     def update_activations_data(self):
+
+        if self.model is not None and self.selected_layer is None:
+            self.selected_layer = 0
+
         if not SIMULATE_TF:
-            inputs = board2planes(self.board)
-            inputs = tf.reshape(tf.convert_to_tensor(inputs, dtype=tf.float32), [-1, 112, 8, 8])
-            print('Running model!!!!!!!!!!!!!!!!!')
-            _, _, _, self.activations_data = self.model(inputs)
+            if self.selected_layer is not None and self.model is not None:
+                inputs = board2planes(self.board)
+                inputs = tf.reshape(tf.convert_to_tensor(inputs, dtype=tf.float32), [-1, 112, 8, 8])
+                print('Running model!!!!!!!!!!!!!!!!!')
+                _, _, _, self.activations_data = self.model(inputs)
         else:
             layers = SIMULATED_LAYERS
             heads = SIMULATED_HEADS
             self.activations_data = [np.random.rand(1, heads, 64, 64) for i in range(layers)]
 
-        if self.model_path not in self.model_cache:
-            self.model_cache[self.model_path] = self.model
+        if self.model is not None:
 
-        self.update_layers_in_body_count()
+            if self.model_path not in self.model_cache:
+                self.model_cache[self.model_path] = self.model
+
+            self.update_layers_in_body_count()
         # self.update_selected_activation_data()
         # self.activations = self.activations_data[self.selected_layer]
 
@@ -333,10 +349,11 @@ class GlobalData:
     def update_selected_activation_data(self):
         # import numpy as np
         # self.activations = activations_array + np.random.rand(8, 64, 64)
-        if not SIMULATE_TF:
-            self.activations = tf.squeeze(self.activations_data[self.selected_layer], axis=0).numpy()
-        else:
-            self.activations = np.squeeze(self.activations_data[self.selected_layer], axis=0)
+        if self.activations_data is not None:
+            if not SIMULATE_TF:
+                self.activations = tf.squeeze(self.activations_data[self.selected_layer], axis=0).numpy()
+            else:
+                self.activations = np.squeeze(self.activations_data[self.selected_layer], axis=0)
 
     def set_visualization_mode(self, mode):
         self.visualization_mode = mode
@@ -361,10 +378,16 @@ class GlobalData:
             self.update_activations_data()
             self.update_selected_activation_data()
             self.number_of_heads = self.activations_data[self.selected_layer].shape[1]
+            if self.selected_head is None:
+                self.selected_head = 0
+            else:
+                self.selected_head = min(self.selected_head, self.number_of_heads - 1)
             self.update_grid_shape()
+        if SIMULATE_TF:
+            sleep(2)
 
     def update_layers_in_body_count(self):
-        # TODO: figure out robust way to separate attention layers in body from the rest.
+        # TODO: figure out robust way to separate attention layers in body from the rest. UPDATE: Use yaml
         heads = self.activations_data[0].shape[1]
         for ind, layer in enumerate(self.activations_data):
             print(ind, layer.shape)
@@ -403,8 +426,8 @@ class GlobalData:
 
     def set_board(self, board):
         self.board = deepcopy(board)
-        print('BOARD STACK!!!!!!')
-        print(self.board.move_stack)
+        #print('BOARD STACK!!!!!!')
+        #print(self.board.move_stack)
         # self.fen = board.fen()
         # self.set_fen(board.fen())
         self.update_activations_data()

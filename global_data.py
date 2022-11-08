@@ -8,7 +8,17 @@ from copy import deepcopy
 from board2planes import board2planes
 #from lczerotraining.tf.load_model import load_model_from_net
 import yaml
-import lczerotraining.tf.tfprocess as tfprocess
+
+import os
+from os.path import isdir, join
+import sys
+
+sys.path.append(join(ROOT_DIR, "lczero-training", "tf"))
+#import lczerotraining.tf.tfprocess as tfprocess
+
+import importlib
+
+tfprocess = importlib.import_module("lczero-training.tf.tfprocess")
 
 
 # turn off tensorflow importing and gerenerate random data to speed up development
@@ -224,8 +234,6 @@ class GlobalData:
             self.model = None
 
     def find_models(self):
-        import os
-        from os.path import isdir, join
         root = ROOT_DIR
         models_root_folder = os.path.join(root, 'models')
         model_folders = [f for f in os.listdir(models_root_folder) if isdir(join(models_root_folder, f))]

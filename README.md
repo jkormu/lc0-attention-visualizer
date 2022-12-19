@@ -1,6 +1,9 @@
 # lc0-attention-visualizer (WIP)
 Visualizes attention layer activations of lc0 attention body nets as heatmaps.
 
+## Demo
+![](demo/demo.gif)
+
 ## Quick start using conda env (untested)
 1. Clone this repo:
  ```

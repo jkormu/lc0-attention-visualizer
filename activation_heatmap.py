@@ -42,13 +42,7 @@ def heatmap_figure():
         fig = add_pieces(fig)
         print('add pieces:', time.time() - start)
 
-    #with open(f'sqr_{global_data.focused_square_ind}_fig_{global_data.running_counter}.txt', "w") as f:
-    #    f.write(fig.__str__())
-    #    global_data.running_counter += 1
 
-    print('OUT------------------------------------------------------------')
-    print(fig)
-    print('OUT END------------------------------------------------------------')
 
 
     return fig
@@ -90,9 +84,9 @@ def heatmap_graph():
 
 
 def make_figure():
-    print('assumed key', global_data.subplot_rows, global_data.subplot_cols, global_data.visualization_mode_is_64x64,  global_data.selected_head if not global_data.show_all_heads else -1)
-    print('key', global_data.get_figure_cache_key())
-    print('all keys', global_data.figure_cache.keys())
+    #print('assumed key', global_data.subplot_rows, global_data.subplot_cols, global_data.visualization_mode_is_64x64,  global_data.selected_head if not global_data.show_all_heads else -1)
+    #print('key', global_data.get_figure_cache_key())
+    #print('all keys', global_data.figure_cache.keys())
     fig = global_data.get_cached_figure()
     if fig is None:
         if global_data.show_all_heads:
@@ -107,10 +101,6 @@ def make_figure():
             print('CREATING 1x1')
             titles = [f"head {global_data.selected_head +1}"]
             fig = make_subplots(rows=1, cols=1, subplot_titles=titles)#go.Figure()#make_subplots(rows=1, cols=1, subplot_titles=titles)
-
-    print('-------------')
-    print(fig)
-    print('-------------')
 
     return fig
 
@@ -430,7 +420,6 @@ def update_heatmap_figure(click_data, mode, layer, head, colorscale_mode, colors
     fig = dash.no_update
     trigger = callback_triggered_by()
     global_data.set_visualization_mode(mode)
-    print('WHAAATATATATATATA:', layer, global_data.model)
     global_data.set_layer(layer)
     global_data.set_heatmap_size(heatmap_size)
 
@@ -444,7 +433,6 @@ def update_heatmap_figure(click_data, mode, layer, head, colorscale_mode, colors
     # if grid dimensions have change we need to trigger full graph component recalc (workaround for dash bug where
     # figure layout is messed up if only figure is updated)
     if global_data.grid_has_changed or trigger in ('colorscale-mode-selector.value', 'colorscale-mode-selector-64x64.value') or global_data.force_update_graph:
-        print('GRID CHANGED')
         global_data.running_counter += 1
         global_data.grid_has_changed = False
         global_data.force_update_graph = 0
@@ -471,7 +459,6 @@ def update_heatmap_figure(click_data, mode, layer, head, colorscale_mode, colors
                    'position-mode-changed-indicator.children',
                    'head-selector.value',
                    'show-colorscale.value', 'heatmap-size.children'):
-        #print('LAYER SELECTOR UPDATE')
         fig = heatmap_figure()
         # container = dash.no_update
 
@@ -491,93 +478,3 @@ def update_heatmap_graph(txt):
         graph = dash.no_update
     return graph
 
-a = """ 
-@app.callback(Output('graph-container', 'children'),
-              [Input('graph', 'clickData'),
-               Input('mode-selector', 'value'),
-               Input('layer-selector', 'value'),
-               Input('selected-model', 'children'),  # New model was selected
-               Input('move-table', 'style_data_conditional'),  # New move was selected in move table
-               Input('fen-text', 'children')  # New fen was set
-               ])
-def update_heatmaps(click_data, mode, layer, *args):
-    graph = dash.no_update
-    trigger = callback_triggered_by()
-    global_data.set_visualization_mode(mode)
-    global_data.set_layer(layer)
-    print('MODE', mode)
-    if trigger == 'graph.clickData' and not click_data:
-        return dash.no_update#, dash.no_update, dash.no_update
-
-    if trigger == 'graph.clickData' and not global_data.visualization_mode_is_64x64:
-        point = click_data['points'][0]
-        x = point['x']
-        y = point['y']
-        square_ind = 8 * y + x
-        if square_ind != global_data.focused_square_ind:
-            global_data.focused_square_ind = square_ind
-            graph = heatmap_graph()
-
-    if trigger == 'fen-text.children':
-        graph = heatmap_graph()
-
-    if trigger in ('mode-selector.value', 'layer-selector.value', 'move-table.style_data_conditional'):
-        graph = heatmap_graph()
-
-    if trigger == 'selected-model.children':
-        graph = heatmap_graph()
-
-    return graph
-"""
-a = """ 
-@app.callback([Output('graph', 'figure'),
-               Output('graph', 'style')],
-              [Input('graph', 'clickData'),
-               Input('mode-selector', 'value'),
-               Input('layer-selector', 'value'),
-               Input('model-selector', 'value'),
-               Input('fen-text', 'children')
-               ])
-def update_heatmaps(click_data, mode, layer, model, *args):
-    fig = dash.no_update
-    trigger = callback_triggered_by()
-    global_data.set_visualization_mode(mode)
-    global_data.set_layer(layer)
-    style = {'height': global_data.figure_container_height, 'width': '100%'}
-    print('MODE', mode)
-    if trigger == 'graph.clickData' and not click_data:
-        return dash.no_update, dash.no_update
-
-    if trigger == 'graph.clickData' and not global_data.visualization_mode_is_64x64:
-        point = click_data['points'][0]
-        x = point['x']
-        y = point['y']
-        square_ind = 8 * y + x
-        if square_ind != global_data.focused_square_ind:
-            global_data.focused_square_ind = square_ind
-            fig = heatmap_figure()
-
-    if trigger == 'fen-text.children':
-        fig = heatmap_figure()
-
-    if trigger in ('mode-selector.value', 'layer-selector.value'):
-        fig = heatmap_figure()
-
-    model_selector = False
-    if trigger == 'model-selector.value':
-        global_data.set_model(model)
-        print(fig)
-        print('--------------------------------------------------------------------------------------------')
-        fig = heatmap_figure()
-        model_selector = True
-        #print(fig)
-    if model_selector:
-        prefix = 'selected'
-    else:
-        prefix = 'initial'
-    with open(f'{prefix}_{global_data.tmp}_fig{global_data.subplot_rows}x{global_data.subplot_cols}.txt', "w") as f:
-        f.write(fig.__str__())
-    global_data.tmp += 1
-    return fig, style
-
-"""

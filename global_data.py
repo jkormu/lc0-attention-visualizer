@@ -105,7 +105,11 @@ class GlobalData:
         self.pgn_data = []  # list of boards in pgn
         self.move_table_boards = {}  # dict of boards in pgn, key is (move_table.row_ind, move_table.column_id)
 
-        self.selected_layer = None
+        if not SIMULATE_TF:
+            self.selected_layer = None
+        else:
+            self.selected_layer = 0
+
         self.nr_of_layers_in_body = -1
 
         self.model_paths = []
@@ -119,7 +123,7 @@ class GlobalData:
             self.load_model()
         self.activations_data = None
 
-        if self.model is not None:
+        if self.model is not None or SIMULATE_TF:
             self.update_activations_data()
 
         if self.selected_layer is not None:
@@ -259,14 +263,10 @@ class GlobalData:
         paths = []
         yamls = []
         for path in model_paths:
-            print('Cecking Path', path)
             yaml_files = [file for file in os.listdir(path) if file.endswith(".yaml")]
-            print('>>>>>>> YAMLS', yaml_files)
             if len(yaml_files) != 1:
-                print('path', path, 'not containing yamls')
                 continue
             model_files = [file for file in os.listdir(path) if file.endswith(".pb.gz")]
-            print('Found model files', model_files)
             if len(model_files) == 0:
                 continue
 
@@ -279,10 +279,6 @@ class GlobalData:
         self.model_names = models
         self.model_paths = paths#model_paths
 
-        print('MODELS:')
-        print(self.model_yamls)
-        print(self.model_names)
-        print(self.model_paths)
 
     def update_activations_data(self):
 
@@ -293,8 +289,10 @@ class GlobalData:
             if self.selected_layer is not None and self.model is not None:
                 inputs = board2planes(self.board)
                 inputs = tf.reshape(tf.convert_to_tensor(inputs, dtype=tf.float32), [-1, 112, 8, 8])
-                print('Running model!!!!!!!!!!!!!!!!!')
                 _, _, _, self.activations_data = self.model(inputs)
+                #print('SHAPE', len(self.activations_data))
+                #print('LAST',self.activations_data[-1].shape)
+                #print('SECOND TO LAST', self.activations_data[-2].shape)
         else:
             layers = SIMULATED_LAYERS
             heads = SIMULATED_HEADS
@@ -370,10 +368,7 @@ class GlobalData:
     def set_layer(self, layer):
         self.selected_layer = layer
         self.update_selected_activation_data()
-        # self.activations = layer * activations_array
-        # self.activations = self.activations_data[self.layer]
         self.number_of_heads = self.activations_data[self.selected_layer].shape[1]
-        print('NUMBER OF HEADS', self.number_of_heads)
         self.update_grid_shape()
 
     def set_head(self, head):
@@ -398,7 +393,6 @@ class GlobalData:
         # TODO: figure out robust way to separate attention layers in body from the rest. UPDATE: Use yaml
         heads = self.activations_data[0].shape[1]
         for ind, layer in enumerate(self.activations_data):
-            print(ind, layer.shape)
             if layer.shape[1] != heads or len(layer.shape) != 4:
                 ind = ind - 1
                 break
@@ -420,10 +414,6 @@ class GlobalData:
         else:
             # print('COL selection')
             data = self.activations[head, :, self.focused_square_ind].reshape((8, 8))
-        #if head == 0:
-        #    print(f'head {head} DATA')
-        #    print(data)
-        # print('SHAPE', data.shape)
         return data
 
     def set_fen(self, fen):
@@ -434,10 +424,6 @@ class GlobalData:
 
     def set_board(self, board):
         self.board = deepcopy(board)
-        #print('BOARD STACK!!!!!!')
-        #print(self.board.move_stack)
-        # self.fen = board.fen()
-        # self.set_fen(board.fen())
         self.update_activations_data()
         self.update_selected_activation_data()
 

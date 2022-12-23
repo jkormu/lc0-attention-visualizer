@@ -4,7 +4,6 @@ import dash
 from server import app
 from dash import dcc, html, Input, Output, State
 from activation_heatmap import heatmap
-from fen_input import fen_component
 from controls import mode_selector, layer_selector, model_selector, head_selector, colorscale_selector
 from position_pane import position_pane
 from global_data import global_data

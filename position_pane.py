@@ -29,6 +29,7 @@ PGN_COMPONENT_STYLE = {
     # 'left': 0,
     'display': 'flex',
     'flexDirection': 'column',
+    'boxSizing': 'border-box'
     #"visibility": "hidden"
 }
 
@@ -242,8 +243,10 @@ def make_datatable():
 
     container = html.Div(id='table-container', children=[
                                                          html.Div(children=table, style={'borderLeft': f'1px solid grey',
-                                                                                        'borderTop': f'1px solid grey'})],
-                         style={'flex': '1', 'overflow': 'auto', },
+                                                                                        'borderTop': f'1px solid grey',
+                                                                                         'boxSizing': 'border-box',
+                                                                                         'width': '100%'})],
+                         style={'flex': '1', 'overflow': 'auto', 'width': '100%'},
                          hidden=True)
 
     #container_outer = html.Div(children=[buttons, container],

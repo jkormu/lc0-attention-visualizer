@@ -24,6 +24,7 @@
 
 .header-container {
     border-bottom: thin lightgrey solid;
+    box-sizing: border-box;
 }
 
 .header-control-container {

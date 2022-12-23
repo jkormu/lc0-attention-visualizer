@@ -37,7 +37,7 @@ else:
 
 # class to hold data, state and configurations
 # Dash is stateless and in general it is very bad idea to store data in global variables on server side
-# However, this application is ment to be run by single user on local machine so it is safe to store data and state
+# However, this application is ment to be run by single user on local machine, so it is safe to store data and state
 # information on global object
 class GlobalData:
     def __init__(self):

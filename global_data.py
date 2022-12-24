@@ -17,7 +17,6 @@ sys.path.append(join(ROOT_DIR, "lczero-training", "tf"))
 #import lczerotraining.tf.tfprocess as tfprocess
 
 import importlib
-
 tfprocess = importlib.import_module("lczero-training.tf.tfprocess")
 
 
@@ -29,6 +28,7 @@ FIXED_ROW = None  # 1 #None to disable
 FIXED_COL = None  # 5 #None to disable
 if SIMULATE_TF:
     import numpy as np
+
 else:
     import tensorflow as tf
     from tensorflow.compat.v1 import ConfigProto
@@ -290,9 +290,7 @@ class GlobalData:
                 inputs = board2planes(self.board)
                 inputs = tf.reshape(tf.convert_to_tensor(inputs, dtype=tf.float32), [-1, 112, 8, 8])
                 _, _, _, self.activations_data = self.model(inputs)
-                #print('SHAPE', len(self.activations_data))
-                #print('LAST',self.activations_data[-1].shape)
-                #print('SECOND TO LAST', self.activations_data[-2].shape)
+
         else:
             layers = SIMULATED_LAYERS
             heads = SIMULATED_HEADS
@@ -357,9 +355,11 @@ class GlobalData:
         # self.activations = activations_array + np.random.rand(8, 64, 64)
         if self.activations_data is not None:
             if not SIMULATE_TF:
-                self.activations = tf.squeeze(self.activations_data[self.selected_layer], axis=0).numpy()
+                activations = tf.squeeze(self.activations_data[self.selected_layer], axis=0).numpy()
+                self.activations = activations[:, ::-1, :] #Flip along y-axis
             else:
                 self.activations = np.squeeze(self.activations_data[self.selected_layer], axis=0)
+
 
     def set_visualization_mode(self, mode):
         self.visualization_mode = mode
@@ -410,10 +410,11 @@ class GlobalData:
 
         elif self.visualization_mode == 'ROW':
             # print('ROW selection')
-            data = self.activations[head, self.focused_square_ind, :].reshape((8, 8))
+            row = 63 - self.focused_square_ind
+            data = self.activations[head, row, :].reshape((8, 8))
         else:
             # print('COL selection')
-            data = self.activations[head, :, self.focused_square_ind].reshape((8, 8))
+            data = self.activations[head, :, self.focused_square_ind].reshape((8, 8))[::-1, ::-1]
         return data
 
     def set_fen(self, fen):

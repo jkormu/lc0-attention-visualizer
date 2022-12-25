@@ -290,7 +290,8 @@ class GlobalData:
             if self.selected_layer is not None and self.model is not None:
                 inputs = board2planes(self.board)
                 inputs = tf.reshape(tf.convert_to_tensor(inputs, dtype=tf.float32), [-1, 112, 8, 8])
-                _, _, _, self.activations_data = self.model(inputs)
+                self.activations_data = self.model(inputs)[-1]
+                #_, _, _, self.activations_data = self.model(inputs)
 
         else:
             layers = SIMULATED_LAYERS

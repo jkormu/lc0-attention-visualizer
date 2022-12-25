@@ -72,7 +72,7 @@ class GlobalData:
         self.selected_head = None
         self.show_all_heads = True
 
-        self.show_colorscale = True
+        self.show_colorscale = False
         self.colorscale_mode = 'mode1'
 
         self.figure_container_height = '100%'  # '100%'
@@ -181,6 +181,7 @@ class GlobalData:
             self.colorscale_mode = colorscale_mode_64x64
         else:
             self.colorscale_mode = colorscale_mode
+        print('SHOW value', show)
         self.show_colorscale = show == [True]
 
     def cache_figure(self, fig):

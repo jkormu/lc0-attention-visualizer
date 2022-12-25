@@ -129,7 +129,7 @@ def colorscale_selector():
     show_scale = dcc.Checklist(
         id='show-colorscale',
         options=[{'label': 'Show scale', 'value': True}],
-        value=[True],
+        value=[],
         style={'marginRight': '5px'}
     )
 

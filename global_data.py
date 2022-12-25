@@ -205,7 +205,8 @@ class GlobalData:
 
     def get_figure_cache_key(self):
         return (self.subplot_rows, self.subplot_cols, self.visualization_mode_is_64x64,
-                self.selected_head if not self.show_all_heads else -1, self.show_colorscale, self.colorscale_mode)
+                self.selected_head if not self.show_all_heads else -1, self.show_colorscale, self.colorscale_mode,
+                self.board.turn)
         #return (self.subplot_rows, self.subplot_cols, self.visualization_mode_is_64x64, self.selected_head if not self.show_all_heads else -1, self.heatmap_horizontal_gap, self.heatmap_fig_h, self.heatmap_fig_w)
         #return (self.subplot_rows, self.subplot_cols, self.visualization_mode_is_64x64, self.show_all_heads)
 
@@ -410,11 +411,32 @@ class GlobalData:
 
         elif self.visualization_mode == 'ROW':
             # print('ROW selection')
-            row = 63 - self.focused_square_ind
-            data = self.activations[head, row, :].reshape((8, 8))
+            if self.board.turn: #White turn to move
+                row = 63 - self.focused_square_ind
+                data = self.activations[head, row, :].reshape((8, 8))
+            else:
+                #row = self.focused_square_ind
+                multiples = self.focused_square_ind // 8
+                remainder = self.focused_square_ind % 8
+
+                a = 7 - remainder
+                b = multiples * 8
+                row = a + b
+                data = self.activations[head, row, :].reshape((8, 8))[::-1, :]
         else:
             # print('COL selection')
-            data = self.activations[head, :, self.focused_square_ind].reshape((8, 8))[::-1, ::-1]
+            if self.board.turn: #White turn to move
+                col = self.focused_square_ind
+                data = self.activations[head, :, col].reshape((8, 8))[::-1, ::-1]
+            else:
+                focused = 63 - self.focused_square_ind
+                multiples = focused // 8
+                remainder = focused % 8
+                a = 7 - remainder
+                b = multiples * 8
+                col = a + b
+                #print('COL!!!!!!!!!!!!!!!!!', col, a, b, focused, self.focused_square_ind)
+                data = self.activations[head, :, col].reshape((8, 8))[:, ::-1]
         return data
 
     def set_fen(self, fen):

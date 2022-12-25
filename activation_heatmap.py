@@ -150,10 +150,14 @@ def update_axis(fig):
     if global_data.visualization_mode_is_64x64:
         tickvals_x = list(range(0, 64, 4))
         tickvals_y = list(range(3, 67, 4))#list(range(0, 64, 4))#list(range(3, 67, 4))
-        ticktext_x = [x + y for x, y in zip('ae' * 8, '1122334455667788')]
+        if global_data.board.turn:
+            ticktext_x = [x + y for x, y in zip('ae' * 8, '1122334455667788')]
         #tickvals = list(range(0, 64))
         #ticktext_x = [x + y for x, y in zip('abcdefg' * 8, '1'*8 + '2'*8 + '3'*8 + '4'*8 + '5'*8 + '6'*8 + '7'*8 + '8'*8)]
-        ticktext_y = ticktext_x[::-1]
+            ticktext_y = ticktext_x[::-1]
+        else:
+            ticktext_x = [x + y for x, y in zip('ae' * 8, '1122334455667788'[::-1])]
+            ticktext_y = ticktext_x[::-1]
         showticklabels = True
         #ticklabelstep = 4
         val_range = [-0.5, 63.5]
@@ -271,8 +275,13 @@ def add_heatmap_trace(fig, row, col, head=None):
         xgap, ygap = 0, 0
         #hovertemplate = 'Query: <b>%{y}</b> <br> Key: <b>%{x}</b> <br> value: <b>%{z}</b><extra></extra>'
         hovertemplate = 'Query: <b>%{customdata[0]}</b> <br>Key: <b>%{customdata[1]}</b> <br>value: <b>%{z:.5f}</b><extra></extra>'
-        customdata_x = [[letter + ind for ind in '12345678' for letter in 'abcdefgh'] for _ in range(64)]
-        customdata_y = [[letter + ind for _ in range(64)] for ind in '12345678'[::-1] for letter in 'abcdefgh'[::-1]]
+        if global_data.board.turn:
+            customdata_x = [[letter + ind for ind in '12345678' for letter in 'abcdefgh'] for _ in range(64)]
+            customdata_y = [[letter + ind for _ in range(64)] for ind in '12345678'[::-1] for letter in 'abcdefgh'[::-1]]
+        else:
+            customdata_x = [[letter + ind for ind in '12345678'[::-1] for letter in 'abcdefgh'] for _ in range(64)]
+            customdata_y = [[letter + ind for _ in range(64)] for ind in '12345678' for letter in 'abcdefgh'[::-1]]
+
         #customdata_y = [[letter + ind for _ in range(64)] for ind in '12345678' for letter in 'abcdefgh']
         customdata = np.moveaxis([customdata_y, customdata_x], 0, -1)#[customdata_x, customdata_y]
 

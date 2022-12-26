@@ -164,6 +164,18 @@ def colorscale_selector():
 
     return colorscale_selector_container
 
+def layout_options():
+    colorscale_selector_container = html.Div(className='header-control-container')
+    label = html.Label(html.B('Layout'), className='header-label')
+    show_scale = dcc.Checklist(
+        id='fit_to_single_page',
+        options=[{'label': 'Dense layout', 'value': True}],
+        value=[],
+        style={'marginRight': '5px'}
+    )
+
+    colorscale_selector_container.children = [label, show_scale]
+    return colorscale_selector_container
 @app.callback(Output('head-selector', 'disabled'),
               Input('show-all-heads', 'value'),
               )

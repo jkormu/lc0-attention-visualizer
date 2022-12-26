@@ -4,7 +4,7 @@ import dash
 from server import app
 from dash import dcc, html, Input, Output, State
 from activation_heatmap import heatmap
-from controls import mode_selector, layer_selector, model_selector, head_selector, colorscale_selector
+from controls import mode_selector, layer_selector, model_selector, head_selector, colorscale_selector, layout_options
 from position_pane import position_pane
 from global_data import global_data
 
@@ -78,6 +78,7 @@ header_container = html.Div(children=[
     model_selector(),
     layer_selector(),
     head_selector(),
+    layout_options(),
     #html.Button(id='test-button', children='TEST', n_clicks=1)
 ],
     className='header-container',

@@ -407,7 +407,8 @@ def add_pieces(fig):
 @app.callback([Output('graph', 'figure'),
                #Output('fig-store', 'data'),
                Output('recalculate-graph-indicator', 'children'),
-               Output('graph', 'style')],
+               Output('graph', 'style'),
+               Output('fit_to_single_page', 'options')],
               [Input('graph', 'clickData'),
                Input('mode-selector', 'value'),
                Input('layer-selector', 'value'),
@@ -416,29 +417,41 @@ def add_pieces(fig):
                Input('colorscale-mode-selector-64x64', 'value'),
                Input('show-colorscale', 'value'),
                Input('heatmap-size', 'children'),
+               Input('fit_to_single_page', 'value'),
                Input('selected-model', 'children'),  # New model was selected
                Input('move-table', 'style_data_conditional'),  # New move was selected in move table
                Input('position-mode-changed-indicator', 'children'),  # fen/pgn mode changed
                Input('fen-text', 'children'),  # New fen was set
                Input('head-selector', 'disabled'),  # Show all heads checkbox value was changed
                ])
-def update_heatmap_figure(click_data, mode, layer, head, colorscale_mode, colorscale_mode_64x64, show_colorscale, heatmap_size, *args):
+def update_heatmap_figure(click_data, mode, layer, head, colorscale_mode, colorscale_mode_64x64, show_colorscale, heatmap_size, fit_to_page, *args):
+    fit_to_page_disabled = [{'label': 'Dense layout', 'value': True, 'disabled': True}]
+    fit_to_page_enabled = [{'label': 'Dense layout', 'value': True}]
 
     if layer is None or global_data.model is None:
-        return dash.no_update, dash.no_update, {'visibility': 'hidden'}#dash.no_update
+        return dash.no_update, dash.no_update, {'visibility': 'hidden'}, fit_to_page_enabled#dash.no_update
 
     fig = dash.no_update
     trigger = callback_triggered_by()
     global_data.set_visualization_mode(mode)
     global_data.set_layer(layer)
     global_data.set_heatmap_size(heatmap_size)
+    global_data.set_subplot_mode(fit_to_page)
 
     global_data.set_head(head)
 
     global_data.set_colorscale_mode(mode, colorscale_mode, colorscale_mode_64x64, show_colorscale)
 
+
     if trigger == 'graph.clickData' and not click_data:
-        return dash.no_update, dash.no_update, dash.no_update  # , dash.no_update, dash.no_update
+        return dash.no_update, dash.no_update, dash.no_update, dash.no_update  # , dash.no_update, dash.no_update
+
+
+    disable_fit_to_page = global_data.figure_container_height == '100%' and global_data.subplot_mode == 'big'
+    if disable_fit_to_page:
+        fit_to_page_option = fit_to_page_disabled
+    else:
+        fit_to_page_option = fit_to_page_enabled
 
     # if grid dimensions have change we need to trigger full graph component recalc (workaround for dash bug where
     # figure layout is messed up if only figure is updated)
@@ -448,7 +461,7 @@ def update_heatmap_figure(click_data, mode, layer, head, colorscale_mode, colors
         global_data.force_update_graph = 0
         #Erase figure, update indicator with new value, hide graph until updated again
         #return dash.no_update, global_data.running_counter, dash.no_update
-        return {}, global_data.running_counter, {'visibility': 'hidden'}
+        return {}, global_data.running_counter, {'visibility': 'hidden'}, fit_to_page_option
 
     if trigger == 'graph.clickData' and not global_data.visualization_mode_is_64x64:
         point = click_data['points'][0]
@@ -476,7 +489,7 @@ def update_heatmap_figure(click_data, mode, layer, head, colorscale_mode, colors
         fig = heatmap_figure()  # dash.no_update#heatmap_figure()
         # container = heatmap_graph()
     global_data.cache_figure(fig)
-    return fig, dash.no_update, dash.no_update
+    return fig, dash.no_update, dash.no_update, fit_to_page_option
 #"""
 
 @app.callback(Output('graph-container', 'children'),

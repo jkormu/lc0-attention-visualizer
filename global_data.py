@@ -23,7 +23,7 @@ tfprocess = importlib.import_module("lczero-training.tf.tfprocess")
 
 SIMULATE_TF = False #TODO: Remove this option, deprecated
 # turn off tensorflow importing and generate random data to speed up development
-DEV_MODE = False
+DEV_MODE = True
 SIMULATED_LAYERS = 6
 SIMULATED_HEADS = 64
 FIXED_ROW = None  # 1 #None to disable
@@ -381,7 +381,11 @@ class GlobalData:
 
         self.subplot_cols = cols
         self.subplot_rows = rows
-        self.figure_container_height = container_height
+
+        if self.show_all_heads:
+            self.figure_container_height = container_height
+        else:
+            self.figure_container_height = '100%'
 
     def update_selected_activation_data(self):
         # import numpy as np

@@ -23,7 +23,7 @@ tfprocess = importlib.import_module("lczero-training.tf.tfprocess")
 
 SIMULATE_TF = False #TODO: Remove this option, deprecated
 # turn off tensorflow importing and generate random data to speed up development
-DEV_MODE = True
+DEV_MODE = False
 SIMULATED_LAYERS = 6
 SIMULATED_HEADS = 64
 FIXED_ROW = None  # 1 #None to disable

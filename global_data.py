@@ -161,15 +161,15 @@ class GlobalData:
 
     def set_heatmap_size(self, size):
         if size != '1':
-            print('-----------------------HEATMAP SIZE', size)
+            #print('-----------------------HEATMAP SIZE', size)
             # w, h = size
             # print('TYETETETETEU', global_data.screen_w)
             # global_data.set_screen_size(w, h)
-            print('>>>>>: HEATMAP WIDTH', size[0])
-            print('>>>>>: HEATMAP HEIGHT', size[1])
-            print('>>>>>: FIG WIDTH', size[2])
-            print('>>>>>: FIG HEIGHT', size[3])
-            print('>>>>>: HEATMAP GAP', size[4])
+            #print('>>>>>: HEATMAP WIDTH', size[0])
+            #print('>>>>>: HEATMAP HEIGHT', size[1])
+            #print('>>>>>: FIG WIDTH', size[2])
+            #print('>>>>>: FIG HEIGHT', size[3])
+            #print('>>>>>: HEATMAP GAP', size[4])
 
             self.heatmap_w = float(size[0])
             self.heatmap_h = float(size[1])
@@ -198,7 +198,7 @@ class GlobalData:
             self.colorscale_mode = colorscale_mode_64x64
         else:
             self.colorscale_mode = colorscale_mode
-        print('SHOW value', show)
+        #print('SHOW value', show)
         self.show_colorscale = show == [True]
 
     def cache_figure(self, fig):
@@ -206,7 +206,7 @@ class GlobalData:
             key = self.get_figure_cache_key()
             cached_fig = deepcopy(fig)
             cached_fig.update_layout({'coloraxis1': None}, overwrite=True)
-            print('CACHING FIGURE:')
+            #print('CACHING FIGURE:')
             self.figure_cache[key] = cached_fig
 
     def get_cached_figure(self):
@@ -268,9 +268,9 @@ class GlobalData:
         self.model_names = model_folders
         self.model_paths = model_paths
 
-        print('MODELS:')
-        print(self.model_names)
-        print(self.model_paths)
+        #print('MODELS:')
+        #print(self.model_names)
+        #print(self.model_paths)
 
     def find_models2(self):
         import os

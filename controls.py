@@ -42,6 +42,8 @@ def get_layer_options():
     # layers = len([layer for layer in global_data.activations_data if layer.shape[-1] == 64 and layer.shape[-2] == 64])
     dropdown_options = [{'label': f'Layer {layer + 1} (body)', 'value': layer} for layer in
                         range(global_data.nr_of_layers_in_body)]
+    if global_data.has_attention_policy:
+        dropdown_options.append({'label': 'Policy', 'value': 'Policy'})
     return dropdown_options
 
 

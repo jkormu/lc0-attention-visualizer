@@ -1,5 +1,5 @@
 import chess.engine
-from constants import ROOT_DIR, CONTENT_HEIGHT, LEFT_PANE_WIDTH
+from constants import ROOT_DIR, CONTENT_HEIGHT, LEFT_PANE_WIDTH, EXPORT_FORMAT, EXPORT_SCALE
 from time import sleep
 # from test_array import activations_array
 
@@ -68,6 +68,8 @@ class GlobalData:
             #tf.keras.backend.clear_session()
 
         self.tmp = 0
+        self.export_format = EXPORT_FORMAT
+        self.export_scale = EXPORT_SCALE
         self.fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'  # '2kr3r/ppp2b2/2n4p/4p3/Q2Pq1pP/2P1N3/PP3PP1/R1B1KB1R w KQ - 3 18'#'6n1/1p1k4/3p4/pNp5/P1P4p/7P/1P4KP/r7 w - - 2 121'#
         self.board = chess.Board(fen=self.fen)
         self.focused_square_ind = 0

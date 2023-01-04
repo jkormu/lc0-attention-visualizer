@@ -65,7 +65,12 @@ def heatmap_graph():
 
     config = {
         'displaylogo': False,
-        'modeBarButtonsToRemove': ['zoom', 'pan', 'select', 'zoomIn', 'zoomOut', 'autoScale', 'resetScale']}
+        'displayModeBar': True,
+        'modeBarButtonsToRemove': ['zoom', 'pan', 'select', 'zoomIn', 'zoomOut', 'autoScale', 'resetScale'],
+        'toImageButtonOptions': {
+            'format': global_data.export_format,
+            'scale': global_data.export_scale
+        }}
 
     style = {'height': global_data.figure_container_height, 'width': '100%'}#, 'margin': '0 auto'}
 
@@ -127,7 +132,8 @@ def add_layout(fig):
     layout = go.Layout(
         # title='Plot title goes here',
         margin={'t': LAYOUT_MARGIN_V, 'b': LAYOUT_MARGIN_V, 'r': 40, 'l': 40},
-        coloraxis1=coloraxis
+        coloraxis1=coloraxis,
+        modebar={'orientation': 'v'}
         #coloraxis={'colorscale': 'Viridis'}
         #pa
         #plot_bgcolor='rgb(0,0,0)',

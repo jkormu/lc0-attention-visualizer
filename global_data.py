@@ -361,12 +361,11 @@ class GlobalData:
                 rows = heads // 8 + int(heads % 8 != 0)
 
         elif self.subplot_mode == 'big':
-            print('!!!!!!!-.........................!!!!!!!!!!!!!!!!!!!!!')
-            print(heads)
+            #print(heads)
 
             max_rows_in_screen = 2
             rows = heads // 4 + int(heads % 4 != 0)
-            print(rows)
+            #print(rows)
 
         if rows > max_rows_in_screen:
             container_height = f'{int((rows / max_rows_in_screen) * 100)}%'

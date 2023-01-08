@@ -6,7 +6,7 @@ from time import sleep
 from copy import deepcopy
 
 from board2planes import board2planes
-#from lczerotraining.tf.load_model import load_model_from_net
+
 import yaml
 
 import os
@@ -124,6 +124,7 @@ class GlobalData:
             self.selected_layer = 0
 
         self.nr_of_layers_in_body = -1
+        self.has_attention_policy = False
 
         self.model_paths = []
         self.model_names = []
@@ -317,6 +318,8 @@ class GlobalData:
                 else:
                     inputs = None
                 self.activations_data = self.model(inputs)[-1]
+                for i,x in enumerate(self.activations_data):
+                    print( 'LAYERS', i, x.shape)
                 #_, _, _, self.activations_data = self.model(inputs)
 
         else:
@@ -330,6 +333,13 @@ class GlobalData:
                 self.model_cache[self.model_path] = self.model
 
             self.update_layers_in_body_count()
+
+        #TODO: figure out better way to determine if we have policy attention weights
+        #TODO: What happens if policy vis is selected and user switches to model without policy layer? Take care of this case.
+        if self.activations_data is not None and self.activations_data[-2].shape == (1, 8, 24):
+            self.has_attention_policy = True
+        else:
+            self.has_attention_policy = False
         # self.update_selected_activation_data()
         # self.activations = self.activations_data[self.selected_layer]
 
@@ -392,11 +402,17 @@ class GlobalData:
         # import numpy as np
         # self.activations = activations_array + np.random.rand(8, 64, 64)
         if self.activations_data is not None:
-            if not DEV_MODE:
-                activations = tf.squeeze(self.activations_data[self.selected_layer], axis=0).numpy()
-                self.activations = activations[:, ::-1, :] #Flip along y-axis
+            if self.selected_layer != 'Policy':
+                if not DEV_MODE:
+                    activations = tf.squeeze(self.activations_data[self.selected_layer], axis=0).numpy()
+                    self.activations = activations[:, ::-1, :] #Flip along y-axis
+                else:
+                    self.activations = np.squeeze(self.activations_data[self.selected_layer], axis=0)
             else:
-                self.activations = np.squeeze(self.activations_data[self.selected_layer], axis=0)
+                print('RAW POLICY SHAPE', self.activations_data[-1].shape)
+                self.activations = self.activations_data[-1].numpy()#tf.squeeze(self.activations_data[-1], axis=0).numpy()
+                #self.activations = np.expand_dims(activations, axis=0)
+                print('POLICY SHAPE', self.activations.shape)
 
 
     def set_visualization_mode(self, mode):
@@ -406,7 +422,10 @@ class GlobalData:
     def set_layer(self, layer):
         self.selected_layer = layer
         self.update_selected_activation_data()
-        self.number_of_heads = self.activations_data[self.selected_layer].shape[1]
+        if layer != 'Policy':
+            self.number_of_heads = self.activations_data[self.selected_layer].shape[1]
+        else:
+            self.number_of_heads = 1
         self.update_grid_shape()
 
     def set_head(self, head):
@@ -435,7 +454,8 @@ class GlobalData:
                 ind = ind - 1
                 break
         self.nr_of_layers_in_body = ind + 1
-        self.selected_layer = min(self.selected_layer, self.nr_of_layers_in_body - 1)
+        if self.selected_layer != 'Policy':
+            self.selected_layer = min(self.selected_layer, self.nr_of_layers_in_body - 1)
 
     def get_head_data(self, head):
 

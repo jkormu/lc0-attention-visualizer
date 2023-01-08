@@ -43,7 +43,7 @@ def get_layer_options():
     dropdown_options = [{'label': f'Layer {layer + 1} (body)', 'value': layer} for layer in
                         range(global_data.nr_of_layers_in_body)]
     if global_data.has_attention_policy:
-        dropdown_options.append({'label': 'Policy', 'value': 'Policy'})
+        dropdown_options.append({'label': 'Policy (partial, no promo)', 'value': 'Policy'})
     return dropdown_options
 
 

@@ -6,7 +6,7 @@ from time import sleep
 from copy import deepcopy
 
 from board2planes import board2planes
-#from lczerotraining.tf.load_model import load_model_from_net
+
 import yaml
 
 import os

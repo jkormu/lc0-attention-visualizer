@@ -298,7 +298,7 @@ class GlobalData:
             models += model_files
             paths += [os.path.relpath(join(path, f)) for f in model_files]
             yaml_file = os.path.relpath(join(path, yaml_files[0]))
-            yamls += [yaml_file]*len(paths)
+            yamls += [yaml_file]*len(model_files)
 
         self.model_yamls = {path: yaml_file for path, yaml_file in zip(paths, yamls)}
         self.model_names = models

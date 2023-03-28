@@ -13,6 +13,8 @@ import os
 from os.path import isdir, join
 import sys
 
+import numpy as np
+
 sys.path.append(join(ROOT_DIR, "lczero-training", "tf"))
 #import lczerotraining.tf.tfprocess as tfprocess
 
@@ -29,8 +31,6 @@ SIMULATED_HEADS = 64
 FIXED_ROW = None  # 1 #None to disable
 FIXED_COL = None  # 5 #None to disable
 if DEV_MODE:
-    import numpy as np
-
     class DummyModel:
         def __init__(self, layers, heads):
             self.layers = layers
@@ -410,9 +410,20 @@ class GlobalData:
                     self.activations = np.squeeze(self.activations_data[self.selected_layer], axis=0)
             else:
                 print('RAW POLICY SHAPE', self.activations_data[-1].shape)
-                self.activations = self.activations_data[-1].numpy()#tf.squeeze(self.activations_data[-1], axis=0).numpy()
-                #self.activations = np.expand_dims(activations, axis=0)
+                self.activations = self.activations_data[-1].numpy()
                 print('POLICY SHAPE', self.activations.shape)
+
+                #print('RAW POLICY SHAPE', self.activations_data[-1].shape)
+                #activations = np.squeeze(self.activations_data[-1].numpy(), axis=0) #shape 64,64
+                #promo = np.squeeze(self.activations_data[-2].numpy(), axis=0) #shape 8,24
+                #print('promo shape:', promo.shape)
+                #if self.board.turn:
+                #    pad_shape = (48, 8)
+                #else:
+                #    pad_shape = (8, 48)
+                #promo_padded = np.pad(promo, (pad_shape, (0, 0)), mode='constant', constant_values=None) #shape 64,24
+                #self.activations = np.expand_dims(np.concatenate((activations, promo_padded), axis=1), axis=0)#shape 1,64,88
+                #print('POLICY SHAPE', self.activations.shape)
 
 
     def set_visualization_mode(self, mode):

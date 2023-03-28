@@ -320,30 +320,13 @@ def add_heatmap_trace(fig, row, col, head=None):
         pass
         zmin = np.amin(global_data.activations[head, :, :])
         zmax = np.amax(global_data.activations[head, :, :])
-        print('ZMINMAX M2', head, zmin, zmax)
+        #print('ZMINMAX M2', head, zmin, zmax)
 
     elif global_data.colorscale_mode == 'mode1':
         zmin = np.amin(data)
         zmax = np.amax(data)
-        #print('ZMINMAX M1', head, cmin, cmax)
 
-    #showscale = True if (col == row == 1) else False
-
-    #d = (1/global_data.subplot_rows)
-    #d2 = (1/global_data.subplot_cols)
-
-    #offset = 1/global_data.subplot_cols - (global_data.heatmap_horizontal_gap/(global_data.subplot_cols))/2 - (global_data.heatmap_horizontal_gap/(global_data.subplot_cols))/4
-
-    #len = (1 - V_GAP/global_data.subplot_rows) / global_data.subplot_rows #- #V_GAP/global_data.subplot_rows
-    #offset2 = len/2 #1/global_data.subplot_rows - (V_GAP/global_data.subplot_rows)
-
-    #cx = (col-1)*(d2 + (global_data.heatmap_horizontal_gap / global_data.subplot_cols)/global_data.subplot_cols) + offset #(d2 - (global_data.heatmap_horizontal_gap / global_data.subplot_cols))
-    #cy = (row-1)*(d + (V_GAP / global_data.subplot_rows)/global_data.subplot_rows) + offset2  #d/2
-
-    #zmin = np.amin(data)
-    #zmax = np.amax(data)
-    #print('ZMINMAX M1', head, zmin, zmax)
-
+    #print('Trace data shape', data.shape)
     trace = go.Heatmap(
         z=data,
         colorscale=colorscale,

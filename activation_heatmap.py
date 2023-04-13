@@ -1,3 +1,4 @@
+import chess
 import dash
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
@@ -13,6 +14,7 @@ import time
 
 import numpy as np
 
+from plotly.io import to_json
 
 V_GAP = 0.15
 LAYOUT_MARGIN_V = 40
@@ -38,12 +40,18 @@ def heatmap_figure():
     print('add layout total:', time.time() - start)
 
     start = time.time()
-    if not global_data.visualization_mode_is_64x64:
+
+    if global_data.selected_layer == 'Smolgen':
+        with open('fig_as_json_no_pieces.json', 'w') as f:
+            f.write(to_json(fig, pretty=True))
+
+    if not global_data.visualization_mode_is_64x64:# and global_data.selected_layer != 'Smolgen':
         fig = add_pieces(fig)
         print('add pieces:', time.time() - start)
 
-
-
+    if global_data.selected_layer == 'Smolgen':
+        with open('fig_as_json.json', 'w') as f:
+            f.write(to_json(fig, pretty=True))
 
     return fig
 
@@ -156,7 +164,7 @@ def update_axis(fig):
     if global_data.visualization_mode_is_64x64:
         tickvals_x = list(range(0, 64, 4))
         tickvals_y = list(range(3, 67, 4))#list(range(0, 64, 4))#list(range(3, 67, 4))
-        if global_data.board.turn:
+        if global_data.board.turn or global_data.selected_layer == 'Smolgen':
             ticktext_x = [x + y for x, y in zip('ae' * 8, '1122334455667788')]
         #tickvals = list(range(0, 64))
         #ticktext_x = [x + y for x, y in zip('abcdefg' * 8, '1'*8 + '2'*8 + '3'*8 + '4'*8 + '5'*8 + '6'*8 + '7'*8 + '8'*8)]
@@ -241,13 +249,13 @@ def calc_colorbar(row, col):
         #total_h = global_data.heatmap_fig_h * global_data.heatmap_h + (global_data.subplot_rows - 1)
         len = global_data.heatmap_h/(global_data.heatmap_fig_h - 2*LAYOUT_MARGIN_V)
         lenmode = 'fraction'
-        offset2 = len / 2
+        #offset2 = len / 2
         #lenmode = 'pixels'
         #offset2 = 1 - len/(global_data.subplot_rows*len + V_GAP) #1/global_data.subplot_rows - (V_GAP/global_data.subplot_rows)
 
-        tot_h = global_data.heatmap_fig_h - 2*LAYOUT_MARGIN_V
-        max_h = ((1 - V_GAP)) / global_data.subplot_rows
-        cur_h =  len
+        #tot_h = global_data.heatmap_fig_h - 2*LAYOUT_MARGIN_V
+        #max_h = ((1 - V_GAP)) / global_data.subplot_rows
+        #cur_h =  len
         offset2 = 1 - (global_data.subplot_rows-1)*(dy + (V_GAP / global_data.subplot_rows)/global_data.subplot_rows) - len/2 #0#len/2 #+ (max_h - cur_h)
 
 
@@ -281,7 +289,7 @@ def add_heatmap_trace(fig, row, col, head=None):
         xgap, ygap = 0, 0
         #hovertemplate = 'Query: <b>%{y}</b> <br> Key: <b>%{x}</b> <br> value: <b>%{z}</b><extra></extra>'
         hovertemplate = 'Query: <b>%{customdata[0]}</b> <br>Key: <b>%{customdata[1]}</b> <br>value: <b>%{z:.5f}</b><extra></extra>'
-        if global_data.board.turn:
+        if global_data.board.turn or global_data.selected_layer == 'Smolgen':
             customdata_x = [[letter + ind for ind in '12345678' for letter in 'abcdefgh'] for _ in range(64)]
             customdata_y = [[letter + ind for _ in range(64)] for ind in '12345678'[::-1] for letter in 'abcdefgh'[::-1]]
         else:
@@ -362,8 +370,43 @@ def add_heatmap_traces(fig):
 
 
 def add_pieces(fig):
-    board_svg = get_svg_board(global_data.board, global_data.focused_square_ind, True)
+    if global_data.selected_layer != 'Smolgen':
+        board = global_data.board
 
+    else:
+        board = chess.Board(fen=None) #Empty board, we want to draw only the focused square
+        board_svg = get_svg_board(board, global_data.focused_square_ind, True)
+
+        images = [dict(
+                source=board_svg,
+                xref="x"+str(i),
+                yref="y"+str(i),
+                x=3.5,
+                y=3.5,
+                sizex=8,
+                sizey=8,
+                xanchor='center',
+                yanchor='middle',
+                sizing="stretch",
+            )
+            for i in range(2, 2+255)
+            ]
+        images = [dict(
+                source=board_svg,
+                xref="x",
+                yref="y",
+                x=3.5,
+                y=3.5,
+                sizex=8,
+                sizey=8,
+                xanchor='center',
+                yanchor='middle',
+                sizing="stretch",
+            )] + images
+
+        fig.layout.images = images
+        return fig
+    board_svg = get_svg_board(board, global_data.focused_square_ind, True)
     if global_data.check_if_figure_is_cached():
         print('USING CACHED')
         for img in fig.layout.images:
@@ -422,6 +465,11 @@ def update_heatmap_figure(click_data, mode, layer, head, colorscale_mode, colors
 
     fig = dash.no_update
     trigger = callback_triggered_by()
+    if trigger == 'heatmap-size.children' and show_colorscale != [True]:
+        return dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
+
+    print('Update triggered by', trigger)
     global_data.set_visualization_mode(mode)
     global_data.set_layer(layer)
     global_data.set_heatmap_size(heatmap_size)

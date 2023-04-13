@@ -44,6 +44,8 @@ def get_layer_options():
                         range(global_data.nr_of_layers_in_body)]
     if global_data.has_attention_policy:
         dropdown_options.append({'label': 'Policy (partial, no promo)', 'value': 'Policy'})
+    if global_data.tfp is not None and global_data.tfp.use_smolgen:
+        dropdown_options.append({'label': 'smolgen weights (experimental)', 'value': 'Smolgen'})
     return dropdown_options
 
 

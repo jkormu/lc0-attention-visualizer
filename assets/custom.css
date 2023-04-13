@@ -25,6 +25,8 @@
 .header-container {
     border-bottom: thin lightgrey solid;
     box-sizing: border-box;
+    white-space: nowrap;
+    overflow-y: auto;
 }
 
 .header-control-container {

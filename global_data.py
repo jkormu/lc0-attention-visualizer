@@ -133,6 +133,7 @@ class GlobalData:
         self.find_models2()
         self.model_path = None#self.model_paths[0]  # '/home/jusufe/PycharmProjects/lc0-attention-visualizer/T12_saved_model_1M'
         self.model = None
+        self.tfp = None #TensorflowProcess
         if not SIMULATE_TF:
             self.load_model()
         self.activations_data = None
@@ -236,7 +237,7 @@ class GlobalData:
 
     def load_model(self):
         if self.model_path in self.model_cache:
-            self.model = self.model_cache[self.model_path]
+            self.model, self.tfp = self.model_cache[self.model_path]
 
         elif self.model_path is not None:
             #net = '/home/jusufe/Projects/lc0/BT1024-3142c-swa-186000.pb.gz'
@@ -256,11 +257,14 @@ class GlobalData:
                 tfp.init_net()
                 tfp.replace_weights(net, ignore_errors=False)
                 self.model = tfp.model
+                self.tfp = tfp
             else:
                 self.model = DummyModel(SIMULATED_LAYERS, SIMULATED_HEADS)
+                self.tfp = None
 
         else:
             self.model = None
+            self.tfp = None
 
     def find_models(self):
         root = ROOT_DIR
@@ -311,16 +315,29 @@ class GlobalData:
             self.selected_layer = 0
 
         if not SIMULATE_TF:
-            if self.selected_layer is not None and self.model is not None:
+            if self.selected_layer is not None and self.model is not None and self.selected_layer != 'Smolgen':
                 if not DEV_MODE:
                     inputs = board2planes(self.board)
                     inputs = tf.reshape(tf.convert_to_tensor(inputs, dtype=tf.float32), [-1, 112, 8, 8])
                 else:
                     inputs = None
-                self.activations_data = self.model(inputs)[-1]
+
+                outputs = self.model(inputs)
+                self.activations_data = outputs[-1]
                 for i,x in enumerate(self.activations_data):
                     print( 'LAYERS', i, x.shape)
+
+                #smolgen = self.tfp.smol_weight_gen_dense.get_weights()[0].reshape((256, 64, 64))
+                #print('Smolgen')
+                #print(type(smolgen))
+                #print(smolgen.shape)
+                #print(type(smolgen[0]))
+                #print(smolgen[0].shape)
                 #_, _, _, self.activations_data = self.model(inputs)
+            elif self.selected_layer == 'Smolgen' and self.tfp is not None and self.tfp.use_smolgen:
+                weights = self.tfp.smol_weight_gen_dense.get_weights()[0]
+                self.activations_data = weights.reshape((weights.shape[0], 64, 64))
+                print('TYPEEEEE', type(self.activations_data))
 
         else:
             layers = SIMULATED_LAYERS
@@ -330,7 +347,7 @@ class GlobalData:
         if self.model is not None:
 
             if self.model_path not in self.model_cache:
-                self.model_cache[self.model_path] = self.model
+                self.model_cache[self.model_path] = [self.model, self.tfp]
 
             self.update_layers_in_body_count()
 
@@ -402,16 +419,16 @@ class GlobalData:
         # import numpy as np
         # self.activations = activations_array + np.random.rand(8, 64, 64)
         if self.activations_data is not None:
-            if self.selected_layer != 'Policy':
+            if self.selected_layer not in ('Policy', 'Smolgen'):
                 if not DEV_MODE:
                     activations = tf.squeeze(self.activations_data[self.selected_layer], axis=0).numpy()
-                    self.activations = activations[:, ::-1, :] #Flip along y-axis
+                    #self.activations = activations[:, ::-1, :] #Flip along y-axis
                 else:
-                    self.activations = np.squeeze(self.activations_data[self.selected_layer], axis=0)
-            else:
+                    activations = np.squeeze(self.activations_data[self.selected_layer], axis=0)
+            elif self.selected_layer == 'Policy':
                 print('RAW POLICY SHAPE', self.activations_data[-1].shape)
-                self.activations = self.activations_data[-1].numpy()
-                print('POLICY SHAPE', self.activations.shape)
+                activations = self.activations_data[-1].numpy()
+                #print('POLICY SHAPE', activations.shape)
 
                 #print('RAW POLICY SHAPE', self.activations_data[-1].shape)
                 #activations = np.squeeze(self.activations_data[-1].numpy(), axis=0) #shape 64,64
@@ -424,7 +441,10 @@ class GlobalData:
                 #promo_padded = np.pad(promo, (pad_shape, (0, 0)), mode='constant', constant_values=None) #shape 64,24
                 #self.activations = np.expand_dims(np.concatenate((activations, promo_padded), axis=1), axis=0)#shape 1,64,88
                 #print('POLICY SHAPE', self.activations.shape)
+            elif self.selected_layer == 'Smolgen':
+                activations = self.tfp.smol_weight_gen_dense.get_weights()[0].reshape((256, 64, 64))
 
+            self.activations = activations[:, ::-1, :]  # Flip along y-axis
 
     def set_visualization_mode(self, mode):
         self.visualization_mode = mode
@@ -433,10 +453,13 @@ class GlobalData:
     def set_layer(self, layer):
         self.selected_layer = layer
         self.update_selected_activation_data()
-        if layer != 'Policy':
+        if layer not in ('Policy', 'Smolgen'):
             self.number_of_heads = self.activations_data[self.selected_layer].shape[1]
-        else:
+        elif layer == 'Policy':
             self.number_of_heads = 1
+        elif layer == 'Smolgen':
+            self.number_of_heads = self.activations.shape[0]
+            self.set_head(0)
         self.update_grid_shape()
 
     def set_head(self, head):
@@ -465,7 +488,7 @@ class GlobalData:
                 ind = ind - 1
                 break
         self.nr_of_layers_in_body = ind + 1
-        if self.selected_layer != 'Policy':
+        if self.selected_layer not in ('Policy', 'Smolgen'):
             self.selected_layer = min(self.selected_layer, self.nr_of_layers_in_body - 1)
 
     def get_head_data(self, head):
@@ -479,7 +502,7 @@ class GlobalData:
 
         elif self.visualization_mode == 'ROW':
             # print('ROW selection')
-            if self.board.turn: #White turn to move
+            if self.board.turn or self.selected_layer == 'Smolgen': #White turn to move
                 row = 63 - self.focused_square_ind
                 data = self.activations[head, row, :].reshape((8, 8))
             else:
@@ -493,7 +516,7 @@ class GlobalData:
                 data = self.activations[head, row, :].reshape((8, 8))[::-1, :]
         else:
             # print('COL selection')
-            if self.board.turn: #White turn to move
+            if self.board.turn or self.selected_layer == 'Smolgen': #White turn to move
                 col = self.focused_square_ind
                 data = self.activations[head, :, col].reshape((8, 8))[::-1, ::-1]
             else:

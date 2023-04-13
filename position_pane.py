@@ -29,7 +29,8 @@ PGN_COMPONENT_STYLE = {
     # 'left': 0,
     'display': 'flex',
     'flexDirection': 'column',
-    'boxSizing': 'border-box'
+    'boxSizing': 'border-box',
+    'overflow': 'clip',
     #"visibility": "hidden"
 }
 
